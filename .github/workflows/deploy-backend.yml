@@ -1,0 +1,46 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar dependencias (solo producción)
+        working-directory: backend
+        run: pnpm install --prod
+
+      - name: Actualizar restart.txt para reiniciar Passenger
+        run: echo "${{ github.run_id }}-${{ github.run_number }}" > backend/tmp/restart.txt
+
+      - name: Subir backend a hosting via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          local-dir: backend/
+          server-dir: ${{ secrets.FTP_BACKEND_DIR }}
+          exclude: |
+            **/.git*
+            **/.env*
+            **/node_modules/**
+
