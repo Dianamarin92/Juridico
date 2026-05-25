@@ -41,6 +41,9 @@ export const getMessages = (ticket_id) => request(`/messages?ticket_id=${ticket_
 export const sendMessage = (ticket_id, content) =>
   request('/messages', { method: 'POST', body: JSON.stringify({ ticket_id, content }) });
 
+// Usuarios (para asignación)
+export const getUsers = () => request('/users');
+
 // Archivos
 export const getFiles = (ticket_id) => request(`/files?ticket_id=${ticket_id}`);
 export const uploadFile = (ticket_id, file) => {

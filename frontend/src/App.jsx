@@ -1,338 +1,232 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './index.css';
 import LandingPage from './LandingPage';
+import * as api from './services/api';
 
-// --- MOCK DATA ---
-const MOCK_COMPANIES = [
-  {
-    id: 'COMP-01',
-    name: 'Distribuidora del Norte S.A.S',
-    tickets: [
-      {
-        id: 'TKT-001',
-        title: 'Despido con justa causa - Empleado Juan Pérez',
-        status: 'pending',
-        date: '2026-05-05',
-        assignedTo: 'Sin asignar',
-        history: [{ user: 'Cliente', time: '05-May 10:00 AM', action: 'Ticket creado' }],
-        messages: [
-          { sender: 'Cliente', text: 'Hola, necesito hacer un despido para mañana. Adjunto soportes.', type: 'received' }
-        ]
-      },
-      {
-        id: 'TKT-005',
-        title: 'Revisión de Contrato a Término Fijo',
-        status: 'progress',
-        date: '2026-05-06',
-        assignedTo: 'Abogada Asignada',
-        history: [
-          { user: 'Cliente', time: '06-May 08:00 AM', action: 'Ticket creado' },
-          { user: 'Abogada Asignada', time: '06-May 09:00 AM', action: 'Estado cambiado a En Progreso' }
-        ],
-        messages: []
-      },
-      {
-        id: 'TKT-007',
-        title: 'Elaboración de poder especial',
-        status: 'done',
-        date: '2026-05-01',
-        assignedTo: 'Abogada Asignada',
-        history: [
-          { user: 'Cliente', time: '01-May 10:00 AM', action: 'Ticket creado' },
-          { user: 'Abogada Asignada', time: '02-May 03:00 PM', action: 'Cambió a Enviado' }
-        ],
-        messages: []
-      },
-      {
-        id: 'TKT-008',
-        title: 'Concepto jurídico sobre horas extras',
-        status: 'done',
-        date: '2026-04-25',
-        assignedTo: 'Steven Marin',
-        history: [
-          { user: 'Cliente', time: '25-Apr 09:00 AM', action: 'Ticket creado' },
-          { user: 'Steven Marin', time: '28-Apr 11:00 AM', action: 'Cambió a Enviado' }
-        ],
-        messages: []
-      }
-    ]
-  },
-  {
-    id: 'COMP-02',
-    name: 'Tech Solutions Ltda',
-    tickets: [
-      {
-        id: 'TKT-002',
-        title: 'Actualización de Reglamento Interno',
-        status: 'progress',
-        date: '2026-05-04',
-        assignedTo: 'Abogada Líder',
-        history: [
-          { user: 'Cliente', time: '04-May 09:00 AM', action: 'Ticket creado' },
-          { user: 'Abogada Líder', time: '04-May 11:30 AM', action: 'Estado cambiado a En Progreso' }
-        ],
-        messages: [
-          { sender: 'Cliente', text: 'Necesitamos incluir la política de teletrabajo.', type: 'received' },
-          { sender: 'Abogada Líder', text: 'Entendido. Ya estamos trabajando en el borrador.', type: 'sent' }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'COMP-03',
-    name: 'Inmobiliaria Central',
-    tickets: [
-      {
-        id: 'TKT-003',
-        title: 'Respuesta a Derecho de Petición',
-        status: 'review',
-        date: '2026-05-02',
-        assignedTo: 'Abogada Asignada',
-        history: [
-          { user: 'Cliente', time: '02-May 08:00 AM', action: 'Ticket creado' },
-          { user: 'Abogada Asignada', time: '03-May 04:00 PM', action: 'Estado cambiado a Para Revisión' }
-        ],
-        messages: [
-          { sender: 'Abogada Asignada', text: 'El borrador está listo para revisión del jefe.', type: 'sent' }
-        ]
-      },
-      {
-        id: 'TKT-004',
-        title: 'Contrato de Arrendamiento Local 5',
-        status: 'done',
-        date: '2026-04-28',
-        assignedTo: 'Steven Marin',
-        history: [
-          { user: 'Cliente', time: '28-Apr 10:00 AM', action: 'Ticket creado' },
-          { user: 'Steven Marin', time: '30-Apr 02:00 PM', action: 'Aprobado y Finalizado' }
-        ],
-        messages: []
-      },
-      {
-        id: 'TKT-006',
-        title: 'Asesoría en compra de lote',
-        status: 'pending',
-        date: '2026-05-06',
-        assignedTo: 'Sin asignar',
-        history: [
-          { user: 'Cliente', time: '06-May 10:00 AM', action: 'Ticket creado' }
-        ],
-        messages: []
-      }
-    ]
-  }
-];
+const ROLE_LABELS = {
+  cliente:           'Cliente',
+  abogada_asignada:  'Abogada Asignada',
+  abogada_lider:     'Abogada Líder',
+  steven_marin:      'Steven Marín',
+};
 
-const ROLES = ['Cliente', 'Abogada Líder', 'Abogada Asignada', 'Steven Marin'];
+const STATUS_INFO = {
+  pending:  { text: 'Pendiente',   cls: 'status-pending' },
+  progress: { text: 'En Proceso',  cls: 'status-progress' },
+  review:   { text: 'En Revisión', cls: 'status-review' },
+  done:     { text: 'Enviado',     cls: 'status-done' },
+};
 
 export default function App() {
   const [showLanding, setShowLanding] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [role, setRole] = useState('Abogada Líder');
-  const [loginPassword, setLoginPassword] = useState('');
-  
-  const [currentView, setCurrentView] = useState('dashboard'); // dashboard, companyDetail, ticketDetail
+  const [user, setUser]               = useState(null);
+
+  const [companies, setCompanies]     = useState([]);
+  const [tickets, setTickets]         = useState([]);
+  const [messages, setMessages]       = useState([]);
+  const [files, setFiles]             = useState([]);
+  const [lawyers, setLawyers]         = useState([]);
+
+  const [currentView, setCurrentView]       = useState('dashboard');
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const [selectedTicket, setSelectedTicket] = useState(null);
-  const [chatInput, setChatInput] = useState('');
-  const [companies, setCompanies] = useState(MOCK_COMPANIES);
+  const [selectedTicket, setSelectedTicket]   = useState(null);
 
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState('');
+
+  const [loginEmail, setLoginEmail]       = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError]       = useState('');
+
+  const [chatInput, setChatInput]         = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newTicketTitle, setNewTicketTitle] = useState('');
-  const [newTicketMessage, setNewTicketMessage] = useState('');
+  const [newTicketTitle, setNewTicketTitle]   = useState('');
+  const [newTicketDesc, setNewTicketDesc]     = useState('');
 
-  // Helper to get status info
-  const getStatusInfo = (status) => {
-    switch(status) {
-      case 'pending': return { text: 'Pendiente', cls: 'status-pending' };
-      case 'progress': return { text: 'En Proceso', cls: 'status-progress' };
-      case 'review': return { text: 'En Revisión', cls: 'status-review' };
-      case 'done': return { text: 'Enviado', cls: 'status-done' };
-      default: return { text: 'Desconocido', cls: '' };
+  const chatEndRef = useRef(null);
+
+  const isLoggedIn = !!user;
+  const role       = user?.role;
+  const isCliente  = role === 'cliente';
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    api.getCompanies()
+      .then(data => {
+        setCompanies(data);
+        if (isCliente && user.company_id) {
+          const mine = data.find(c => c.id === user.company_id);
+          if (mine) openCompany(mine);
+        }
+      })
+      .catch(() => setError('Error al cargar empresas'));
+
+    if (!isCliente) {
+      api.getUsers().then(setLawyers).catch(() => {});
     }
-  };
+  }, [isLoggedIn]);
 
-  const handleLogin = (e) => {
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if(loginPassword.trim() !== '') {
-      setIsLoggedIn(true);
-      if (role === 'Cliente') {
-        setSelectedCompany(companies.find(c => c.id === 'COMP-01'));
-        setCurrentView('companyDetail');
-      } else {
-        setCurrentView('dashboard');
-      }
+    setLoginError('');
+    try {
+      const data = await api.login(loginEmail, loginPassword);
+      localStorage.setItem('token', data.token);
+      setUser(data.user);
+    } catch (err) {
+      setLoginError(err.message);
     }
   };
 
-  const handleOpenCompany = (company) => {
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
+    setCompanies([]); setTickets([]); setMessages([]); setFiles([]);
+    setSelectedCompany(null); setSelectedTicket(null);
+    setCurrentView('dashboard');
+    setShowLanding(true);
+  };
+
+  const openCompany = async (company) => {
     setSelectedCompany(company);
     setCurrentView('companyDetail');
+    setLoading(true);
+    try {
+      setTickets(await api.getTickets(company.id));
+    } catch {
+      setError('Error al cargar tickets');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleOpenTicket = (ticket, company) => {
+  const openTicket = async (ticket) => {
     setSelectedTicket(ticket);
-    setSelectedCompany(company);
     setCurrentView('ticketDetail');
+    setLoading(true);
+    try {
+      const [msgs, fls] = await Promise.all([
+        api.getMessages(ticket.id),
+        api.getFiles(ticket.id),
+      ]);
+      setMessages(msgs);
+      setFiles(fls);
+    } catch {
+      setError('Error al cargar ticket');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if(!chatInput.trim() || !selectedTicket) return;
-    
-    const updatedCompanies = companies.map(c => {
-      if (c.id === selectedCompany.id) {
-        return {
-          ...c,
-          tickets: c.tickets.map(t => {
-            if (t.id === selectedTicket.id) {
-              return {
-                ...t,
-                messages: [...t.messages, { sender: role, text: chatInput, type: 'sent' }]
-              };
-            }
-            return t;
-          })
-        };
-      }
-      return c;
-    });
-
-    setCompanies(updatedCompanies);
-    const updatedCompany = updatedCompanies.find(c => c.id === selectedCompany.id);
-    setSelectedCompany(updatedCompany);
-    setSelectedTicket(updatedCompany.tickets.find(t => t.id === selectedTicket.id));
-    setChatInput('');
+    if (!chatInput.trim()) return;
+    try {
+      await api.sendMessage(selectedTicket.id, chatInput);
+      setChatInput('');
+      setMessages(await api.getMessages(selectedTicket.id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
-  const handleCreateTicket = (e) => {
+  const handleCreateTicket = async (e) => {
     e.preventDefault();
-    if (!newTicketTitle.trim() || !newTicketMessage.trim()) return;
-
-    const newTicketId = `TKT-${Math.floor(Math.random() * 900) + 100}`;
-    const now = new Date();
-    const dateString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
-    const timeString = `${now.getDate()}-May ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
-
-    const newTicket = {
-      id: newTicketId,
-      title: newTicketTitle,
-      status: 'pending',
-      date: dateString,
-      assignedTo: 'Sin asignar',
-      history: [{ user: role, time: timeString, action: 'Ticket creado' }],
-      messages: [{ sender: role, text: newTicketMessage, type: 'sent' }]
-    };
-
-    const updatedCompanies = companies.map(c => {
-      if (c.id === selectedCompany.id) {
-        return {
-          ...c,
-          tickets: [newTicket, ...c.tickets]
-        };
-      }
-      return c;
-    });
-
-    setCompanies(updatedCompanies);
-    const updatedCompany = updatedCompanies.find(c => c.id === selectedCompany.id);
-    setSelectedCompany(updatedCompany);
-    setIsCreateModalOpen(false);
-    setNewTicketTitle('');
-    setNewTicketMessage('');
+    if (!newTicketTitle.trim()) return;
+    try {
+      await api.createTicket({ company_id: selectedCompany.id, title: newTicketTitle, description: newTicketDesc });
+      setIsCreateModalOpen(false);
+      setNewTicketTitle(''); setNewTicketDesc('');
+      setTickets(await api.getTickets(selectedCompany.id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
-  const handleChangeStatus = (newStatus, actionText) => {
-    const updatedCompanies = companies.map(c => {
-      if (c.id === selectedCompany.id) {
-        return {
-          ...c,
-          tickets: c.tickets.map(t => {
-            if (t.id === selectedTicket.id) {
-              const now = new Date();
-              const timeString = `${now.getDate()}-May ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
-              return {
-                ...t,
-                status: newStatus,
-                history: [...t.history, { user: role, time: timeString, action: actionText }]
-              };
-            }
-            return t;
-          })
-        };
-      }
-      return c;
-    });
-
-    setCompanies(updatedCompanies);
-    const updatedCompany = updatedCompanies.find(c => c.id === selectedCompany.id);
-    setSelectedCompany(updatedCompany);
-    setSelectedTicket(updatedCompany.tickets.find(t => t.id === selectedTicket.id));
+  const handleChangeStatus = async (newStatus) => {
+    try {
+      await api.updateTicket(selectedTicket.id, { status: newStatus, assigned_to: selectedTicket.assigned_to });
+      setSelectedTicket(prev => ({ ...prev, status: newStatus }));
+      setTickets(await api.getTickets(selectedCompany.id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
-  const handleChangeAssignment = (newAssignee) => {
-    const actionText = `Se asignó a: ${newAssignee}`;
-    const updatedCompanies = companies.map(c => {
-      if (c.id === selectedCompany.id) {
-        return {
-          ...c,
-          tickets: c.tickets.map(t => {
-            if (t.id === selectedTicket.id) {
-              const now = new Date();
-              const timeString = `${now.getDate()}-May ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
-              return {
-                ...t,
-                assignedTo: newAssignee,
-                history: [...t.history, { user: role, time: timeString, action: actionText }]
-              };
-            }
-            return t;
-          })
-        };
-      }
-      return c;
-    });
-
-    setCompanies(updatedCompanies);
-    const updatedCompany = updatedCompanies.find(c => c.id === selectedCompany.id);
-    setSelectedCompany(updatedCompany);
-    setSelectedTicket(updatedCompany.tickets.find(t => t.id === selectedTicket.id));
+  const handleChangeAssignment = async (newAssignedId) => {
+    try {
+      await api.updateTicket(selectedTicket.id, { status: selectedTicket.status, assigned_to: newAssignedId || null });
+      const lawyer = lawyers.find(l => l.id === parseInt(newAssignedId));
+      setSelectedTicket(prev => ({ ...prev, assigned_to: newAssignedId || null, assigned_email: lawyer?.email || null }));
+      setTickets(await api.getTickets(selectedCompany.id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
+  const handleUploadFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      await api.uploadFile(selectedTicket.id, file);
+      setFiles(await api.getFiles(selectedTicket.id));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const getStatusInfo = (status) => STATUS_INFO[status] || { text: 'Desconocido', cls: '' };
+
+  // ── LANDING ──────────────────────────────────────────
   if (!isLoggedIn && showLanding) {
     return <LandingPage onLogin={() => setShowLanding(false)} />;
   }
 
+  // ── LOGIN ─────────────────────────────────────────────
   if (!isLoggedIn) {
     return (
       <div className="login-wrapper">
         <div className="login-card">
-          <img src="/logo.jpg" alt="Marin & Abogados Logo" style={{ maxHeight: '80px', marginBottom: '1rem', objectFit: 'contain' }} />
-          <h1 style={{margin: '0 0 0.5rem 0', color: 'var(--primary-color)'}}>Marin & Abogados</h1>
-          <p style={{margin: '0 0 0.25rem', color: 'var(--text-muted)'}}>Inicia sesión en tu cuenta</p>
-          <button onClick={() => setShowLanding(true)} style={{background:'none',border:'none',color:'var(--accent-color)',cursor:'pointer',fontSize:'0.8rem',marginBottom:'0.5rem',fontFamily:'inherit'}}>← Volver al sitio web</button>
-          
-          <form onSubmit={handleLogin}>
-            <div className="login-input-group">
-              <label>Usuario:</label>
-              <select value={role} onChange={(e) => setRole(e.target.value)}>
-                {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
+          <img src="/logo.jpg" alt="Marin & Abogados" style={{ maxHeight: '80px', marginBottom: '1rem', objectFit: 'contain' }} />
+          <h1 style={{ margin: '0 0 0.25rem', color: 'var(--primary-color)' }}>Marin & Abogados</h1>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>Portal de Gestión Jurídica</p>
+          <button onClick={() => setShowLanding(true)} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.8rem', margin: '0.5rem 0', fontFamily: 'inherit' }}>
+            ← Volver al sitio web
+          </button>
+
+          {loginError && (
+            <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '0.75rem 1rem', borderRadius: '0.5rem', fontSize: '0.875rem', width: '100%' }}>
+              {loginError}
             </div>
-            
+          )}
+
+          <form onSubmit={handleLogin} style={{ width: '100%' }}>
             <div className="login-input-group">
-              <label>Contraseña:</label>
-              <input 
-                type="password" 
-                placeholder="..." 
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
+              <label>Correo electrónico</label>
+              <input
+                type="email"
+                placeholder="correo@ejemplo.com"
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
                 required
               />
             </div>
-            
+            <div className="login-input-group">
+              <label>Contraseña</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={loginPassword}
+                onChange={e => setLoginPassword(e.target.value)}
+                required
+              />
+            </div>
             <button type="submit" className="btn-primary login-btn">
-              Ingresar al Panel
+              Ingresar al Portal
             </button>
           </form>
         </div>
@@ -340,237 +234,183 @@ export default function App() {
     );
   }
 
+  // ── APP ───────────────────────────────────────────────
   return (
     <div className="app-container">
+      {error && (
+        <div style={{ position: 'fixed', top: '1rem', right: '1rem', background: '#fee2e2', color: '#b91c1c', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', zIndex: 200, fontSize: '0.875rem', boxShadow: '0 4px 12px rgba(0,0,0,.15)' }}>
+          {error}
+          <button onClick={() => setError('')} style={{ background: 'none', border: 'none', marginLeft: '1rem', cursor: 'pointer', fontWeight: 'bold' }}>×</button>
+        </div>
+      )}
+
       {/* SIDEBAR */}
       <aside className="sidebar">
         <div className="sidebar-title">
-          <img src="/logo.jpg" alt="Marin & Abogados Logo" style={{ maxHeight: '32px', objectFit: 'contain' }} />
+          <img src="/logo.jpg" alt="Marin & Abogados" style={{ maxHeight: '32px', objectFit: 'contain' }} />
           Marin & Abogados
         </div>
-        
-        {role !== 'Cliente' ? (
+
+        {!isCliente ? (
           <div className={`nav-link ${currentView === 'dashboard' ? 'active' : ''}`} onClick={() => setCurrentView('dashboard')}>
             Directorio de Empresas
           </div>
         ) : (
-          <div className={`nav-link ${currentView === 'companyDetail' || currentView === 'ticketDetail' ? 'active' : ''}`} onClick={() => {
-            setSelectedCompany(companies.find(c => c.id === 'COMP-01'));
-            setCurrentView('companyDetail');
-          }}>
+          <div className={`nav-link ${currentView !== 'dashboard' ? 'active' : ''}`} onClick={() => selectedCompany && openCompany(selectedCompany)}>
             Mis Tickets
           </div>
         )}
-        <div className="nav-link">
-          Documentos Plantilla
-        </div>
-        {role === 'Steven Marin' && (
+        <div className="nav-link">Documentos Plantilla</div>
+        {role === 'steven_marin' && (
           <div className={`nav-link ${currentView === 'reports' ? 'active' : ''}`} onClick={() => setCurrentView('reports')}>
             Informes
           </div>
         )}
-        
-        <div style={{marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '1rem'}}>
-          <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem'}}>Simular Rol:</p>
-          <select 
-            value={role} 
-            onChange={(e) => { 
-              const newRole = e.target.value;
-              setRole(newRole); 
-              if (newRole === 'Cliente') {
-                setSelectedCompany(companies.find(c => c.id === 'COMP-01'));
-                setCurrentView('companyDetail');
-              } else {
-                setCurrentView('dashboard'); 
-              }
-            }}
-            style={{width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)'}}
-          >
-            {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
+
+        <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{user.email}</p>
+          <span className="role-badge">{ROLE_LABELS[role] || role}</span>
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
+      {/* MAIN */}
       <main className="main-content">
         <header className="topbar">
-          <div className="search-bar" style={{color: '#a3a3a3'}}>
-            Gestión Centralizada - {role}
+          <div className="search-bar" style={{ color: '#a3a3a3' }}>
+            Gestión Centralizada — {ROLE_LABELS[role] || role}
           </div>
           <div className="user-info">
-            <span className="role-badge">{role}</span>
-            <div style={{width: 36, height: 36, borderRadius: '50%', backgroundColor: 'var(--accent-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'}}>
-              {role.charAt(0)}
+            <span className="role-badge">{ROLE_LABELS[role] || role}</span>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: 'var(--accent-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+              {user.email.charAt(0).toUpperCase()}
             </div>
-            <button 
-              className="btn-secondary" 
-              style={{padding: '0.4rem 0.75rem', fontSize: '0.8rem', marginLeft: '0.5rem'}}
-              onClick={() => { setIsLoggedIn(false); setLoginPassword(''); }}
-            >
+            <button className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem', marginLeft: '0.5rem' }} onClick={handleLogout}>
               Cerrar Sesión
             </button>
           </div>
         </header>
 
         <section className="content-area">
-          {/* VISTA 1: TABLA DE EMPRESAS */}
+
+          {/* DASHBOARD */}
           {currentView === 'dashboard' && (
             <>
               <div className="view-header">
                 <div>
-                  <h1 style={{margin: 0, fontSize: '1.5rem'}}>Directorio de Empresas</h1>
-                  <p style={{margin: '0.25rem 0 0', color: 'var(--text-muted)'}}>Revisa el estado general de los casos por cliente.</p>
+                  <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Directorio de Empresas</h1>
+                  <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Estado general de casos por cliente.</p>
                 </div>
-                {role === 'Cliente' && (
-                  <button className="btn-primary" onClick={() => { setSelectedCompany(companies.find(c => c.id === 'COMP-01')); setIsCreateModalOpen(true); }}>
-                    + Nuevo Requerimiento
-                  </button>
-                )}
               </div>
-
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Empresa Cliente</th>
-                      <th style={{textAlign: 'center'}}>Tickets Totales</th>
-                      <th style={{textAlign: 'center'}}>Pendientes</th>
-                      <th style={{textAlign: 'center'}}>En Proceso</th>
-                      <th style={{textAlign: 'center'}}>En Revisión</th>
-                      <th style={{textAlign: 'center'}}>Enviados</th>
-                      <th>Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {companies.map(company => {
-                      const hasPending = company.tickets.some(t => t.status === 'pending');
-                      const pendingCount = company.tickets.filter(t => t.status === 'pending').length;
-                      const progressCount = company.tickets.filter(t => t.status === 'progress').length;
-                      const reviewCount = company.tickets.filter(t => t.status === 'review').length;
-                      const doneCount = company.tickets.filter(t => t.status === 'done').length;
-
-                      // Si es cliente, solo ve su empresa (simulación simple)
-                      if (role === 'Cliente' && company.id !== 'COMP-01') return null;
-
-                      return (
-                        <tr key={company.id} onClick={() => handleOpenCompany(company)}>
-                          <td>
-                            <div className="company-name-cell">
-                              {hasPending && <span className="alert-dot" title="Nuevos tickets pendientes"></span>}
-                              {company.name}
-                            </div>
-                          </td>
-                          <td style={{textAlign: 'center'}}>{company.tickets.length}</td>
-                          <td style={{textAlign: 'center'}}>
-                            {pendingCount > 0 ? <span className="count-badge status-pending">{pendingCount}</span> : <span style={{color: 'var(--text-muted)'}}>0</span>}
-                          </td>
-                          <td style={{textAlign: 'center'}}>
-                            {progressCount > 0 ? <span className="count-badge status-progress">{progressCount}</span> : <span style={{color: 'var(--text-muted)'}}>0</span>}
-                          </td>
-                          <td style={{textAlign: 'center'}}>
-                            {reviewCount > 0 ? <span className="count-badge status-review">{reviewCount}</span> : <span style={{color: 'var(--text-muted)'}}>0</span>}
-                          </td>
-                          <td style={{textAlign: 'center'}}>
-                            {doneCount > 0 ? <span className="count-badge status-done">{doneCount}</span> : <span style={{color: 'var(--text-muted)'}}>0</span>}
-                          </td>
-                          <td>
-                            <button className="btn-secondary" style={{padding: '0.25rem 0.75rem', fontSize: '0.75rem'}}>Ver Detalle →</button>
-                          </td>
+              {loading ? <p style={{ color: 'var(--text-muted)' }}>Cargando...</p> : (
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Empresa Cliente</th>
+                        <th style={{ textAlign: 'center' }}>Pendientes</th>
+                        <th style={{ textAlign: 'center' }}>En Proceso</th>
+                        <th style={{ textAlign: 'center' }}>En Revisión</th>
+                        <th style={{ textAlign: 'center' }}>Enviados</th>
+                        <th>Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {companies.map(company => (
+                        <tr key={company.id} onClick={() => openCompany(company)}>
+                          <td><div className="company-name-cell">{company.name}</div></td>
+                          <td style={{ textAlign: 'center' }}><span style={{ color: 'var(--text-muted)' }}>—</span></td>
+                          <td style={{ textAlign: 'center' }}><span style={{ color: 'var(--text-muted)' }}>—</span></td>
+                          <td style={{ textAlign: 'center' }}><span style={{ color: 'var(--text-muted)' }}>—</span></td>
+                          <td style={{ textAlign: 'center' }}><span style={{ color: 'var(--text-muted)' }}>—</span></td>
+                          <td><button className="btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Ver Detalle →</button></td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </>
           )}
 
-          {/* VISTA DE INFORMES */}
+          {/* INFORMES */}
           {currentView === 'reports' && (
             <div style={{ textAlign: 'center', marginTop: '4rem', color: 'var(--text-muted)' }}>
               <h2>Módulo de Informes</h2>
-              <p>Esta sección está en construcción. Aquí se mostrarán las estadísticas de gestión y tiempos de respuesta de la firma.</p>
+              <p>Esta sección está en construcción.</p>
             </div>
           )}
 
-          {/* VISTA 2: DETALLE DE EMPRESA (LISTA DE TICKETS) */}
+          {/* DETALLE EMPRESA */}
           {currentView === 'companyDetail' && selectedCompany && (
             <>
               <div className="view-header">
                 <div>
-                  {role !== 'Cliente' && (
-                    <button className="btn-secondary" onClick={() => setCurrentView('dashboard')} style={{marginBottom: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem'}}>
+                  {!isCliente && (
+                    <button className="btn-secondary" onClick={() => setCurrentView('dashboard')} style={{ marginBottom: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
                       ← Volver a Empresas
                     </button>
                   )}
-                  <h1 style={{margin: 0, fontSize: '1.5rem'}}>{selectedCompany.name}</h1>
-                  <p style={{margin: '0.25rem 0 0', color: 'var(--text-muted)'}}>Todos los tickets asociados a esta empresa.</p>
+                  <h1 style={{ margin: 0, fontSize: '1.5rem' }}>{selectedCompany.name}</h1>
+                  <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Tickets asociados a esta empresa.</p>
                 </div>
-                {role === 'Cliente' && (
-                  <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)}>
-                    + Crear Ticket
-                  </button>
+                {isCliente && (
+                  <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)}>+ Crear Ticket</button>
                 )}
               </div>
 
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>ID Ticket</th>
-                      {role !== 'Cliente' && <th>Asignado A</th>}
-                      <th>Asunto / Requerimiento</th>
-                      <th>Fecha</th>
-                      <th>Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedCompany.tickets.map(ticket => {
-                      const status = getStatusInfo(ticket.status);
-                      return (
-                        <tr key={ticket.id} onClick={() => handleOpenTicket(ticket, selectedCompany)}>
-                          <td style={{color: 'var(--text-muted)', fontSize: '0.875rem'}}>{ticket.id}</td>
-                          {role !== 'Cliente' && <td style={{fontWeight: '500', color: 'var(--text-muted)'}}>{ticket.assignedTo}</td>}
-                          <td style={{fontWeight: '500', color: 'var(--primary-color)'}}>{ticket.title}</td>
-                          <td style={{color: 'var(--text-muted)', fontSize: '0.875rem'}}>{ticket.date}</td>
-                          <td>
-                            <span className={`count-badge ${status.cls}`}>{status.text}</span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              {loading ? <p style={{ color: 'var(--text-muted)' }}>Cargando tickets...</p> : (
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        {!isCliente && <th>Asignado a</th>}
+                        <th>Asunto</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tickets.length === 0 && (
+                        <tr><td colSpan={isCliente ? 4 : 5} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No hay tickets aún.</td></tr>
+                      )}
+                      {tickets.map(ticket => {
+                        const status = getStatusInfo(ticket.status);
+                        return (
+                          <tr key={ticket.id} onClick={() => openTicket(ticket)}>
+                            <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>#{ticket.id}</td>
+                            {!isCliente && <td style={{ color: 'var(--text-muted)' }}>{ticket.assigned_email || 'Sin asignar'}</td>}
+                            <td style={{ fontWeight: '500', color: 'var(--primary-color)' }}>{ticket.title}</td>
+                            <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{new Date(ticket.created_at).toLocaleDateString('es-CO')}</td>
+                            <td><span className={`count-badge ${status.cls}`}>{status.text}</span></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </>
           )}
 
-          {/* VISTA 3: DETALLE DEL TICKET (CHAT Y LOG) */}
+          {/* DETALLE TICKET */}
           {currentView === 'ticketDetail' && selectedTicket && (
             <>
               <div className="view-header">
                 <div>
-                  <button className="btn-secondary" onClick={() => setCurrentView('companyDetail')} style={{marginBottom: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem'}}>
-                    ← Volver a Tickets de Empresa
+                  <button className="btn-secondary" onClick={() => setCurrentView('companyDetail')} style={{ marginBottom: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                    ← Volver a Tickets
                   </button>
-                  <h1 style={{margin: 0, fontSize: '1.5rem'}}>{selectedTicket.title}</h1>
-                  <p style={{margin: '0.25rem 0 0', color: 'var(--text-muted)'}}>{selectedCompany.name} | Ref: {selectedTicket.id}</p>
+                  <h1 style={{ margin: 0, fontSize: '1.5rem' }}>{selectedTicket.title}</h1>
+                  <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>{selectedCompany?.name} | Ref: #{selectedTicket.id}</p>
                 </div>
-                {role !== 'Cliente' && (
-                  <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                    <label style={{fontWeight: '500'}}>Cambiar Estado:</label>
-                    <select 
+                {!isCliente && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <label style={{ fontWeight: '500' }}>Estado:</label>
+                    <select
                       value={selectedTicket.status}
-                      onChange={(e) => {
-                        const newStatus = e.target.value;
-                        let actionText = '';
-                        if (newStatus === 'pending') actionText = 'Cambió a Pendiente';
-                        if (newStatus === 'progress') actionText = 'Cambió a En Proceso';
-                        if (newStatus === 'review') actionText = 'Cambió a En Revisión';
-                        if (newStatus === 'done') actionText = 'Cambió a Enviado';
-                        handleChangeStatus(newStatus, actionText);
-                      }}
-                      style={{padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontWeight: 'bold'}}
+                      onChange={e => handleChangeStatus(e.target.value)}
+                      style={{ padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontWeight: 'bold' }}
                       className={`count-badge status-${selectedTicket.status}`}
                     >
                       <option value="pending">Pendiente</option>
@@ -582,102 +422,92 @@ export default function App() {
                 )}
               </div>
 
-              <div style={{display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem'}}>
-                <div className="chat-container" style={{height: '500px'}}>
-                  <div style={{padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)', fontWeight: '600'}}>
-                    Hilo de Comunicación
-                  </div>
-                  <div className="chat-messages">
-                    {selectedTicket.messages.length === 0 && (
-                      <p style={{textAlign: 'center', color: 'var(--text-muted)'}}>No hay mensajes aún.</p>
-                    )}
-                    {selectedTicket.messages.map((msg, i) => (
-                      <div key={i} className={`message ${msg.type}`}>
-                        <div className="message-sender">{msg.sender}</div>
-                        <div>{msg.text}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <form className="chat-input" onSubmit={handleSendMessage}>
-                    {role !== 'Cliente' && (
-                      <button 
-                        type="button" 
-                        className="btn-secondary" 
-                        title="Subir documento" 
-                        onClick={() => alert("Función de subida de archivos en desarrollo...")} 
-                        style={{padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.25rem'}}
-                      >
-                        📎 Adjuntar
-                      </button>
-                    )}
-                    <input 
-                      type="text" 
-                      placeholder="Escribe un mensaje..." 
-                      value={chatInput}
-                      onChange={e => setChatInput(e.target.value)}
-                    />
-                    <button type="submit" className="btn-primary">Enviar</button>
-                  </form>
-                </div>
-
-                <div style={{display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
-                  <div style={{background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)'}}>
-                    <h3 style={{marginTop: 0}}>Información</h3>
-                    <p style={{fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0.25rem 0'}}><strong>Estado actual:</strong> <span className={`count-badge ${getStatusInfo(selectedTicket.status).cls}`} style={{display: 'inline-flex', marginLeft: '0.5rem'}}>{getStatusInfo(selectedTicket.status).text}</span></p>
-                    {role !== 'Cliente' && (
-                      <div style={{fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0.75rem 0 0 0', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                        <strong>👤 Asignado a:</strong>
-                        <select 
-                          value={selectedTicket.assignedTo}
-                          onChange={(e) => handleChangeAssignment(e.target.value)}
-                          style={{padding: '0.25rem', borderRadius: '0.25rem', border: '1px solid var(--border-color)', fontSize: '0.875rem'}}
-                        >
-                          <option value="Sin asignar">Sin asignar</option>
-                          {ROLES.filter(r => r !== 'Cliente').map(r => (
-                            <option key={r} value={r}>{r}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
+              {loading ? <p style={{ color: 'var(--text-muted)' }}>Cargando...</p> : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem' }}>
+                  {/* CHAT */}
+                  <div className="chat-container" style={{ height: '500px' }}>
+                    <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)', fontWeight: '600' }}>
+                      Hilo de Comunicación
+                    </div>
+                    <div className="chat-messages">
+                      {messages.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay mensajes aún.</p>}
+                      {messages.map(msg => {
+                        const isMine = msg.sender_id === user.id;
+                        return (
+                          <div key={msg.id} className={`message ${isMine ? 'sent' : 'received'}`}>
+                            <div className="message-sender">{msg.sender_email}</div>
+                            <div>{msg.content}</div>
+                          </div>
+                        );
+                      })}
+                      <div ref={chatEndRef} />
+                    </div>
+                    <form className="chat-input" onSubmit={handleSendMessage}>
+                      {!isCliente && (
+                        <label className="btn-secondary" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                          📎
+                          <input type="file" hidden onChange={handleUploadFile} />
+                        </label>
+                      )}
+                      <input
+                        type="text"
+                        placeholder="Escribe un mensaje..."
+                        value={chatInput}
+                        onChange={e => setChatInput(e.target.value)}
+                      />
+                      <button type="submit" className="btn-primary">Enviar</button>
+                    </form>
                   </div>
 
-                  <div style={{background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)'}}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
-                      <h3 style={{margin: 0}}>Adjuntos</h3>
-                      {role === 'Cliente' && (
-                        <button 
-                          className="btn-primary" 
-                          onClick={() => alert("Función de subida de archivos en desarrollo...")}
-                          style={{padding: '0.25rem 0.5rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem'}}
-                        >
-                          📎 Subir Archivo
-                        </button>
+                  {/* PANEL LATERAL */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                      <h3 style={{ marginTop: 0 }}>Información</h3>
+                      <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0.25rem 0' }}>
+                        <strong>Estado:</strong>{' '}
+                        <span className={`count-badge ${getStatusInfo(selectedTicket.status).cls}`} style={{ display: 'inline-flex', marginLeft: '0.5rem' }}>
+                          {getStatusInfo(selectedTicket.status).text}
+                        </span>
+                      </p>
+                      {!isCliente && (
+                        <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0.75rem 0 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <strong>Asignado a:</strong>
+                          <select
+                            value={selectedTicket.assigned_to || ''}
+                            onChange={e => handleChangeAssignment(e.target.value)}
+                            style={{ padding: '0.25rem', borderRadius: '0.25rem', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
+                          >
+                            <option value="">Sin asignar</option>
+                            {lawyers.map(l => (
+                              <option key={l.id} value={l.id}>{l.email}</option>
+                            ))}
+                          </select>
+                        </div>
                       )}
                     </div>
-                    <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
-                      <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', background: 'var(--bg-color)', borderRadius: '0.5rem', fontSize: '0.875rem'}}>
-                        📄 documento_inicial.pdf
-                      </div>
-                    </div>
-                  </div>
 
-                  {role !== 'Cliente' && (
-                    <div style={{background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)'}}>
-                      <h3 style={{marginTop: 0}}>Historial (Auditoría)</h3>
-                      <div className="history-log">
-                        {selectedTicket.history.map((hist, i) => (
-                          <div key={i} className="history-item">
-                            <div className="history-time">{hist.time}</div>
-                            <div className="history-content">
-                              <strong>{hist.user}</strong>: {hist.action}
-                            </div>
+                    <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3 style={{ margin: 0 }}>Adjuntos</h3>
+                        {isCliente && (
+                          <label className="btn-primary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                            📎 Subir
+                            <input type="file" hidden onChange={handleUploadFile} />
+                          </label>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {files.length === 0 && <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Sin archivos adjuntos.</p>}
+                        {files.map(f => (
+                          <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', background: 'var(--bg-color)', borderRadius: '0.5rem', fontSize: '0.875rem' }}>
+                            📄 {f.filename}
                           </div>
                         ))}
                       </div>
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </section>
@@ -685,42 +515,31 @@ export default function App() {
 
       {/* MODAL CREAR TICKET */}
       {isCreateModalOpen && (
-        <div className="modal-overlay" style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000}}>
-          <div className="modal-content" style={{backgroundColor: 'var(--surface-color)', padding: '2rem', borderRadius: '1rem', width: '500px', maxWidth: '90%', border: '1px solid var(--border-color)'}}>
-            <h2 style={{marginTop: 0, color: 'var(--primary-color)'}}>Crear Nuevo Ticket</h2>
-            <p style={{color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem'}}>
-              Ingresa los detalles de tu requerimiento. Nuestro equipo será notificado inmediatamente.
-            </p>
-            <form onSubmit={handleCreateTicket} style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: 'var(--surface-color)', padding: '2rem', borderRadius: '1rem', width: '500px', maxWidth: '90%', border: '1px solid var(--border-color)' }}>
+            <h2 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Crear Nuevo Ticket</h2>
+            <form onSubmit={handleCreateTicket} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: '500'}}>Asunto / Título del Requerimiento</label>
-                <input 
-                  type="text" 
-                  value={newTicketTitle} 
-                  onChange={e => setNewTicketTitle(e.target.value)} 
-                  style={{width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)'}}
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Asunto</label>
+                <input
+                  type="text"
+                  value={newTicketTitle}
+                  onChange={e => setNewTicketTitle(e.target.value)}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}
                   placeholder="Ej. Revisión de contrato laboral..."
                   required
                 />
               </div>
               <div>
-                <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: '500'}}>Mensaje Inicial</label>
-                <textarea 
-                  value={newTicketMessage} 
-                  onChange={e => setNewTicketMessage(e.target.value)} 
-                  style={{width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', minHeight: '100px'}}
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Descripción</label>
+                <textarea
+                  value={newTicketDesc}
+                  onChange={e => setNewTicketDesc(e.target.value)}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', minHeight: '100px' }}
                   placeholder="Describe detalladamente lo que necesitas..."
-                  required
                 />
               </div>
-              <div>
-                <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: '500'}}>Documentos Adjuntos</label>
-                <button type="button" className="btn-secondary" onClick={() => alert("Función de subida de archivos en desarrollo...")} style={{display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem'}}>
-                  📎 Adjuntar Archivos
-                </button>
-                <p style={{fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.5rem 0 0 0'}}>Puedes subir PDFs, imágenes o documentos de Word.</p>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)'}}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                 <button type="button" className="btn-secondary" onClick={() => setIsCreateModalOpen(false)}>Cancelar</button>
                 <button type="submit" className="btn-primary">Enviar Ticket</button>
               </div>
@@ -728,7 +547,6 @@ export default function App() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

@@ -24,7 +24,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '8h' }
     );
 
-    res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
+    res.json({ token, user: { id: user.id, email: user.email, role: user.role, company_id: user.company_id } });
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }
