@@ -88,16 +88,19 @@ Configurar en GitHub → Settings → Secrets and variables → Actions:
 - Ambos workflows también se pueden lanzar manualmente desde GitHub Actions → "Run workflow"
 - El backend se reinicia via `touch tmp/restart.txt` incluido en el FTP deploy (Passenger detecta el cambio)
 
-## Después de cada deploy de backend (manual vía SSH)
+## Después de cada deploy de backend
+
+El workflow de GitHub Actions ya hace `touch tmp/restart.txt` automáticamente al final — no hay que hacer nada manual en el servidor.
+
+**Excepción — solo si hubo cambios en `backend/package.json`**, entrar por SSH y correr:
 
 ```bash
 cd public_html/api.marinabogados
 npm install --prod
-touch tmp/restart.txt
-curl https://api.marinabogados.funec.org/health   # verificar que responde {"status":"ok"}
 ```
 
 > pnpm no está disponible globalmente en el servidor — usar `npm install --prod`.
+> El `touch tmp/restart.txt` lo hace el workflow automáticamente, no hace falta hacerlo a mano.
 
 ## Configuración Node.js en cPanel
 
