@@ -21,8 +21,8 @@ async function request(path, options = {}) {
 }
 
 // Auth
-export const login = (email, password) =>
-  request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+export const login = (username, password) =>
+  request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
 
 // Empresas
 export const getCompanies = () => request('/companies');

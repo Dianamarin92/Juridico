@@ -4,7 +4,8 @@
 
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  email VARCHAR(255) NOT NULL UNIQUE,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  email VARCHAR(255) DEFAULT NULL,
   password_hash VARCHAR(255) NOT NULL,
   role ENUM('cliente','abogada_lider','abogada_asignada','steven_marin') NOT NULL,
   company_id INT DEFAULT NULL,

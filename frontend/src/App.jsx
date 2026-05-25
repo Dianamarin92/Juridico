@@ -34,7 +34,7 @@ export default function App() {
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
 
-  const [loginEmail, setLoginEmail]       = useState('');
+  const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError]       = useState('');
 
@@ -74,7 +74,7 @@ export default function App() {
     e.preventDefault();
     setLoginError('');
     try {
-      const data = await api.login(loginEmail, loginPassword);
+      const data = await api.login(loginUsername, loginPassword);
       localStorage.setItem('token', data.token);
       setUser(data.user);
     } catch (err) {
@@ -206,12 +206,12 @@ export default function App() {
 
           <form onSubmit={handleLogin} style={{ width: '100%' }}>
             <div className="login-input-group">
-              <label>Correo electrónico</label>
+              <label>Usuario (Cédula / NIT)</label>
               <input
-                type="email"
-                placeholder="correo@ejemplo.com"
-                value={loginEmail}
-                onChange={e => setLoginEmail(e.target.value)}
+                type="text"
+                placeholder="Ej. 1234567890"
+                value={loginUsername}
+                onChange={e => setLoginUsername(e.target.value)}
                 required
               />
             </div>
@@ -268,7 +268,7 @@ export default function App() {
         )}
 
         <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{user.email}</p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{user.username}</p>
           <span className="role-badge">{ROLE_LABELS[role] || role}</span>
         </div>
       </aside>
@@ -282,7 +282,7 @@ export default function App() {
           <div className="user-info">
             <span className="role-badge">{ROLE_LABELS[role] || role}</span>
             <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: 'var(--accent-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-              {user.email.charAt(0).toUpperCase()}
+              {(user.username || '?').charAt(0).toUpperCase()}
             </div>
             <button className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem', marginLeft: '0.5rem' }} onClick={handleLogout}>
               Cerrar Sesión
