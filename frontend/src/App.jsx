@@ -343,52 +343,119 @@ export default function App() {
           {/* DETALLE EMPRESA */}
           {currentView === 'companyDetail' && selectedCompany && (
             <>
-              <div className="view-header">
-                <div>
-                  {!isCliente && (
-                    <button className="btn-secondary" onClick={() => setCurrentView('dashboard')} style={{ marginBottom: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                      ← Volver a Empresas
-                    </button>
-                  )}
-                  <h1 style={{ margin: 0, fontSize: '1.5rem' }}>{selectedCompany.name}</h1>
-                  <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Tickets asociados a esta empresa.</p>
-                </div>
-                {isCliente && (
-                  <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)}>+ Crear Ticket</button>
-                )}
-              </div>
+              {isCliente ? (
+                /* ── VISTA CLIENTE ─────────────────────────────── */
+                <>
+                  <div className="view-header">
+                    <div>
+                      <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Mis Casos</h1>
+                      <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Seguimiento de sus casos jurídicos.</p>
+                    </div>
+                    <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)}>+ Nuevo Caso</button>
+                  </div>
 
-              {loading ? <p style={{ color: 'var(--text-muted)' }}>Cargando tickets...</p> : (
-                <div className="table-container">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        {!isCliente && <th>Asignado a</th>}
-                        <th>Asunto</th>
-                        <th>Fecha</th>
-                        <th>Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tickets.length === 0 && (
-                        <tr><td colSpan={isCliente ? 4 : 5} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No hay tickets aún.</td></tr>
+                  {loading ? <p style={{ color: 'var(--text-muted)' }}>Cargando...</p> : (
+                    <>
+                      {/* Resumen de estados */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+                        {[
+                          { key: 'pending',  label: 'Pendientes',  cls: 'status-pending' },
+                          { key: 'progress', label: 'En Proceso',  cls: 'status-progress' },
+                          { key: 'review',   label: 'En Revisión', cls: 'status-review' },
+                          { key: 'done',     label: 'Enviados',    cls: 'status-done' },
+                        ].map(({ key, label, cls }) => (
+                          <div key={key} style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '0.75rem', padding: '1rem 1.25rem', textAlign: 'center' }}>
+                            <div style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--primary-color)' }}>
+                              {tickets.filter(t => t.status === key).length}
+                            </div>
+                            <span className={`count-badge ${cls}`} style={{ marginTop: '0.25rem', display: 'inline-block' }}>{label}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Lista de casos */}
+                      {tickets.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-muted)', background: 'var(--surface-color)', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                          <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Aún no tiene casos registrados.</p>
+                          <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)}>+ Crear primer caso</button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {tickets.map(ticket => {
+                            const status = getStatusInfo(ticket.status);
+                            return (
+                              <div
+                                key={ticket.id}
+                                onClick={() => openTicket(ticket)}
+                                style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '0.75rem', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', transition: 'box-shadow 0.2s' }}
+                                onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'}
+                                onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', minWidth: '2.5rem' }}>#{ticket.id}</span>
+                                  <div>
+                                    <div style={{ fontWeight: '600', color: 'var(--primary-color)', marginBottom: '0.2rem' }}>{ticket.title}</div>
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(ticket.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                  <span className={`count-badge ${status.cls}`}>{status.text}</span>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>›</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       )}
-                      {tickets.map(ticket => {
-                        const status = getStatusInfo(ticket.status);
-                        return (
-                          <tr key={ticket.id} onClick={() => openTicket(ticket)}>
-                            <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>#{ticket.id}</td>
-                            {!isCliente && <td style={{ color: 'var(--text-muted)' }}>{ticket.assigned_email || 'Sin asignar'}</td>}
-                            <td style={{ fontWeight: '500', color: 'var(--primary-color)' }}>{ticket.title}</td>
-                            <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{new Date(ticket.created_at).toLocaleDateString('es-CO')}</td>
-                            <td><span className={`count-badge ${status.cls}`}>{status.text}</span></td>
+                    </>
+                  )}
+                </>
+              ) : (
+                /* ── VISTA ADMIN ────────────────────────────────── */
+                <>
+                  <div className="view-header">
+                    <div>
+                      <button className="btn-secondary" onClick={() => setCurrentView('dashboard')} style={{ marginBottom: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                        ← Volver a Empresas
+                      </button>
+                      <h1 style={{ margin: 0, fontSize: '1.5rem' }}>{selectedCompany.name}</h1>
+                      <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Tickets asociados a esta empresa.</p>
+                    </div>
+                  </div>
+
+                  {loading ? <p style={{ color: 'var(--text-muted)' }}>Cargando tickets...</p> : (
+                    <div className="table-container">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Asignado a</th>
+                            <th>Asunto</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                        </thead>
+                        <tbody>
+                          {tickets.length === 0 && (
+                            <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No hay tickets aún.</td></tr>
+                          )}
+                          {tickets.map(ticket => {
+                            const status = getStatusInfo(ticket.status);
+                            return (
+                              <tr key={ticket.id} onClick={() => openTicket(ticket)}>
+                                <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>#{ticket.id}</td>
+                                <td style={{ color: 'var(--text-muted)' }}>{ticket.assigned_email || 'Sin asignar'}</td>
+                                <td style={{ fontWeight: '500', color: 'var(--primary-color)' }}>{ticket.title}</td>
+                                <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{new Date(ticket.created_at).toLocaleDateString('es-CO')}</td>
+                                <td><span className={`count-badge ${status.cls}`}>{status.text}</span></td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}

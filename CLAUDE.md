@@ -143,7 +143,7 @@ Crear en cPanel → phpMyAdmin seleccionando la BD primero (no usar `CREATE DATA
 
 ```
 frontend/src/
-├── App.jsx              Sistema de tickets (mock data aún — pendiente conectar API)
+├── App.jsx              Sistema de tickets conectado a la API real
 ├── LandingPage.jsx      Sitio institucional con info del brochure
 ├── landing.css          Estilos landing (paleta: #1a1a1a, #c0392b, #fff)
 ├── index.css            Estilos sistema de tickets
@@ -151,13 +151,27 @@ frontend/src/
     └── api.js           Capa HTTP → llama a api.marinabogados.funec.org
 ```
 
+## Primer usuario (admin)
+
+- **Username:** `admin`
+- **Password:** `1111`
+- **Rol:** `steven_marin`
+- Hash bcrypt: `$2a$10$p3hzDeDz8ZomCDdBlFnBbO6KMUudZ/2hk.dKD.UYrqnc9U.y.HZJG`
+
+SQL para insertar (ejecutar en phpMyAdmin):
+```sql
+DELETE FROM users WHERE email = 'steven@marinabogados.com';
+INSERT INTO users (username, email, password_hash, role, company_id)
+VALUES ('admin', 'steven@marinabogados.com', '$2a$10$p3hzDeDz8ZomCDdBlFnBbO6KMUudZ/2hk.dKD.UYrqnc9U.y.HZJG', 'steven_marin', NULL);
+```
+
 ## Pendientes
 
-- [ ] Conectar `App.jsx` a la API real (reemplazar `MOCK_COMPANIES` con llamadas a `api.js`)
-- [ ] Insertar primer usuario real en la BD (`funecor_marin_abogados.users`)
-- [ ] Probar login real con JWT
-- [ ] Configurar multer 2.x en backend (advertencia de seguridad en multer 1.x)
-- [ ] Crear carpeta `uploads/` en servidor: `mkdir -p public_html/api.marinabogados/uploads`
+- [ ] Ejecutar DELETE + INSERT del usuario admin en phpMyAdmin (ver sección anterior)
+- [ ] Probar login en `https://marinabogados.funec.org` con `admin` / `1111`
+- [ ] Crear carpeta `uploads/` en servidor via SSH: `mkdir -p public_html/api.marinabogados/uploads`
+- [ ] Probar flujo completo: login → empresas → tickets → mensajes → archivos
+- [ ] Actualizar multer a 2.x en backend (advertencia de seguridad en multer 1.x)
 
 ## Historial del proyecto
 
