@@ -117,12 +117,19 @@ Todas las rutas son relativas a `https://api.marinabogados.funec.org`:
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | POST | `/auth/login` | Login → devuelve JWT |
-| GET/POST | `/companies` | Listar / crear empresas |
+| GET | `/companies` | Listar empresas |
+| POST | `/companies` | Crear empresa + usuario cliente |
+| PUT | `/companies/:id` | Actualizar datos de empresa |
+| DELETE | `/companies/:id` | Eliminar empresa (cascade: usuarios, tickets, archivos) |
 | GET/POST | `/tickets` | Listar / crear tickets |
 | PUT | `/tickets/:id` | Actualizar ticket |
+| DELETE | `/tickets/:id` | Eliminar ticket (solo si está en `pending`) |
 | GET/POST | `/messages` | Mensajes de un ticket |
 | POST | `/files/upload` | Subir archivo |
 | GET | `/files` | Archivos de un ticket |
+| DELETE | `/files/:id` | Eliminar archivo |
+| GET | `/users` | Listar abogadas (para asignación) |
+| PUT | `/users/me/password` | Cambiar contraseña del usuario autenticado |
 | GET | `/health` | Health check |
 
 ## Roles del sistema
@@ -139,6 +146,22 @@ Todas las rutas son relativas a `https://api.marinabogados.funec.org`:
 Script completo en `backend/database.sql`. Tablas: `users`, `companies`, `tickets`, `messages`, `audit_logs`, `file_uploads`.
 Crear en cPanel → phpMyAdmin seleccionando la BD primero (no usar `CREATE DATABASE` en hosting compartido).
 
+### Columnas añadidas a `companies` (ALTER ejecutado en producción)
+
+```sql
+ALTER TABLE companies
+  ADD COLUMN nit VARCHAR(20) DEFAULT NULL AFTER name,
+  ADD COLUMN contact_name VARCHAR(100) DEFAULT NULL,
+  ADD COLUMN phone VARCHAR(20) DEFAULT NULL,
+  ADD COLUMN email VARCHAR(255) DEFAULT NULL;
+```
+
+### Columna `username` añadida a `users` (ALTER ejecutado en producción)
+
+```sql
+ALTER TABLE users ADD COLUMN username VARCHAR(50) NOT NULL UNIQUE AFTER id;
+```
+
 ## Frontend — estructura clave
 
 ```
@@ -151,27 +174,36 @@ frontend/src/
     └── api.js           Capa HTTP → llama a api.marinabogados.funec.org
 ```
 
-## Primer usuario (admin)
+## Funcionalidades implementadas (al 2026-05-26)
 
-- **Username:** `admin`
-- **Password:** `1111`
-- **Rol:** `steven_marin`
-- Hash bcrypt: `$2a$10$p3hzDeDz8ZomCDdBlFnBbO6KMUudZ/2hk.dKD.UYrqnc9U.y.HZJG`
+### Vista cliente
+- Al iniciar sesión va directo a **Mis Tickets** (no pasa por directorio de empresas)
+- **Resumen por estado** en 4 tarjetas: Pendientes / En Proceso / En Revisión / Enviados
+- Lista de tickets como tarjetas con título, fecha y badge de estado
+- **Crear ticket:** modal con asunto, descripción y adjuntar múltiples archivos; la descripción se envía automáticamente como primer mensaje del hilo
+- **Eliminar ticket:** botón rojo visible solo si el ticket está en estado `pending`
+- **Mi Perfil** en el sidebar: editar datos de empresa (nombre, NIT, contacto, teléfono, correo) y cambiar contraseña
+- Panel de adjuntos en ticket: botón **×** para eliminar cada archivo
 
-SQL para insertar (ejecutar en phpMyAdmin):
-```sql
-DELETE FROM users WHERE email = 'steven@marinabogados.com';
-INSERT INTO users (username, email, password_hash, role, company_id)
-VALUES ('admin', 'steven@marinabogados.com', '$2a$10$p3hzDeDz8ZomCDdBlFnBbO6KMUudZ/2hk.dKD.UYrqnc9U.y.HZJG', 'steven_marin', NULL);
-```
+### Vista admin (abogadas / Steven Marín)
+- **+ Nueva Empresa:** formulario con datos de empresa (nombre, NIT, contacto, teléfono, correo) y acceso del cliente (usuario + contraseña) — crea empresa y usuario cliente en un solo paso
+- **Eliminar empresa:** botón en cada fila del directorio — borra empresa, usuario cliente y todos sus tickets en cascada
+- Login por `username` (cédula/NIT), no por email
+
+### General
+- Deploy FTP a veces da timeout — si falla, re-ejecutar desde GitHub Actions → Re-run jobs
+- `email` en tabla `users` permite NULL (ALTER ejecutado en producción)
+
+## Usuario admin
+
+- **Username:** `admin` | **Password:** `1111` | **Rol:** `steven_marin`
+- Ya insertado en producción en `funecor_marin_abogados.users`
 
 ## Pendientes
 
-- [ ] Ejecutar DELETE + INSERT del usuario admin en phpMyAdmin (ver sección anterior)
-- [ ] Probar login en `https://marinabogados.funec.org` con `admin` / `1111`
 - [ ] Crear carpeta `uploads/` en servidor via SSH: `mkdir -p public_html/api.marinabogados/uploads`
-- [ ] Probar flujo completo: login → empresas → tickets → mensajes → archivos
 - [ ] Actualizar multer a 2.x en backend (advertencia de seguridad en multer 1.x)
+- [ ] Si el deploy de FTP falla por timeout, re-ejecutar manualmente desde GitHub Actions → Re-run jobs
 
 ## Historial del proyecto
 
