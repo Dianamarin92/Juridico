@@ -151,6 +151,10 @@ export default function App() {
     if (!newTicketTitle.trim()) return;
     try {
       const ticket = await api.createTicket({ company_id: selectedCompany.id, title: newTicketTitle, description: newTicketDesc });
+      // Enviar descripción como primer mensaje en el hilo
+      if (newTicketDesc.trim()) {
+        await api.sendMessage(ticket.id, newTicketDesc.trim());
+      }
       // Subir archivos adjuntos si hay
       for (const file of newTicketFiles) {
         await api.uploadFile(ticket.id, file);
