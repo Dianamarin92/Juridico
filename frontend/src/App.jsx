@@ -51,17 +51,27 @@ export default function App() {
 
   useEffect(() => {
     if (!isLoggedIn) return;
-    api.getCompanies()
-      .then(data => {
-        setCompanies(data);
-        if (isCliente && user.company_id) {
-          const mine = data.find(c => c.id === user.company_id);
-          if (mine) openCompany(mine);
-        }
-      })
-      .catch(() => setError('Error al cargar empresas'));
 
-    if (!isCliente) {
+    if (isCliente && user.company_id) {
+      // Cliente va directo a sus tickets
+      setCurrentView('companyDetail');
+      setSelectedCompany({ id: user.company_id, name: '' });
+      setLoading(true);
+      api.getTickets(user.company_id)
+        .then(setTickets)
+        .catch(() => setError('Error al cargar tickets'))
+        .finally(() => setLoading(false));
+      // Cargar nombre de empresa en paralelo
+      api.getCompanies()
+        .then(data => {
+          const mine = data.find(c => c.id === user.company_id);
+          if (mine) setSelectedCompany(mine);
+        })
+        .catch(() => {});
+    } else {
+      api.getCompanies()
+        .then(setCompanies)
+        .catch(() => setError('Error al cargar empresas'));
       api.getUsers().then(setLawyers).catch(() => {});
     }
   }, [isLoggedIn]);
