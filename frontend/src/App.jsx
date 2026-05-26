@@ -42,6 +42,7 @@ export default function App() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newTicketTitle, setNewTicketTitle]   = useState('');
   const [newTicketDesc, setNewTicketDesc]     = useState('');
+  const [newTicketFiles, setNewTicketFiles]   = useState([]);
 
   const chatEndRef = useRef(null);
 
@@ -149,9 +150,13 @@ export default function App() {
     e.preventDefault();
     if (!newTicketTitle.trim()) return;
     try {
-      await api.createTicket({ company_id: selectedCompany.id, title: newTicketTitle, description: newTicketDesc });
+      const ticket = await api.createTicket({ company_id: selectedCompany.id, title: newTicketTitle, description: newTicketDesc });
+      // Subir archivos adjuntos si hay
+      for (const file of newTicketFiles) {
+        await api.uploadFile(ticket.id, file);
+      }
       setIsCreateModalOpen(false);
-      setNewTicketTitle(''); setNewTicketDesc('');
+      setNewTicketTitle(''); setNewTicketDesc(''); setNewTicketFiles([]);
       setTickets(await api.getTickets(selectedCompany.id));
     } catch (err) {
       setError(err.message);
@@ -359,10 +364,10 @@ export default function App() {
                 <>
                   <div className="view-header">
                     <div>
-                      <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Mis Casos</h1>
-                      <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Seguimiento de sus casos jurídicos.</p>
+                      <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Mis Tickets</h1>
+                      <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Seguimiento de sus tickets jurídicos.</p>
                     </div>
-                    <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)}>+ Nuevo Caso</button>
+                    <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)}>+ Nuevo Ticket</button>
                   </div>
 
                   {loading ? <p style={{ color: 'var(--text-muted)' }}>Cargando...</p> : (
@@ -387,8 +392,8 @@ export default function App() {
                       {/* Lista de casos */}
                       {tickets.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-muted)', background: 'var(--surface-color)', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
-                          <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Aún no tiene casos registrados.</p>
-                          <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)}>+ Crear primer caso</button>
+                          <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Aún no tiene tickets registrados.</p>
+                          <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)}>+ Crear primer ticket</button>
                         </div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -595,7 +600,7 @@ export default function App() {
       {isCreateModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ backgroundColor: 'var(--surface-color)', padding: '2rem', borderRadius: '1rem', width: '500px', maxWidth: '90%', border: '1px solid var(--border-color)' }}>
-            <h2 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Crear Nuevo Ticket</h2>
+            <h2 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Nuevo Ticket</h2>
             <form onSubmit={handleCreateTicket} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Asunto</label>
@@ -617,8 +622,29 @@ export default function App() {
                   placeholder="Describe detalladamente lo que necesitas..."
                 />
               </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Documentos adjuntos <span style={{ color: 'var(--text-muted)', fontWeight: '400' }}>(opcional)</span></label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', border: '2px dashed var(--border-color)', borderRadius: '0.5rem', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                  📎 Seleccionar archivos
+                  <input
+                    type="file"
+                    multiple
+                    hidden
+                    onChange={e => setNewTicketFiles(Array.from(e.target.files))}
+                  />
+                </label>
+                {newTicketFiles.length > 0 && (
+                  <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    {newTicketFiles.map((f, i) => (
+                      <div key={i} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        📄 {f.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
-                <button type="button" className="btn-secondary" onClick={() => setIsCreateModalOpen(false)}>Cancelar</button>
+                <button type="button" className="btn-secondary" onClick={() => { setIsCreateModalOpen(false); setNewTicketFiles([]); }}>Cancelar</button>
                 <button type="submit" className="btn-primary">Enviar Ticket</button>
               </div>
             </form>
