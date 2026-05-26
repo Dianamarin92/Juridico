@@ -188,6 +188,18 @@ export default function App() {
     }
   };
 
+  const handleDeleteTicket = async () => {
+    if (!window.confirm('¿Seguro que deseas eliminar este ticket? Esta acción no se puede deshacer.')) return;
+    try {
+      await api.deleteTicket(selectedTicket.id);
+      setSelectedTicket(null);
+      setCurrentView('companyDetail');
+      setTickets(await api.getTickets(selectedCompany.id));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const handleUploadFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -490,6 +502,14 @@ export default function App() {
                   </button>
                   <h1 style={{ margin: 0, fontSize: '1.5rem' }}>{selectedTicket.title}</h1>
                   <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>{selectedCompany?.name} | Ref: #{selectedTicket.id}</p>
+                  {isCliente && selectedTicket.status === 'pending' && (
+                    <button
+                      onClick={handleDeleteTicket}
+                      style={{ marginTop: '0.75rem', background: 'none', border: '1px solid #dc2626', color: '#dc2626', borderRadius: '0.5rem', padding: '0.35rem 0.85rem', fontSize: '0.8rem', cursor: 'pointer' }}
+                    >
+                      Eliminar ticket
+                    </button>
+                  )}
                 </div>
                 {!isCliente && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -634,7 +654,7 @@ export default function App() {
                     type="file"
                     multiple
                     hidden
-                    onChange={e => setNewTicketFiles(Array.from(e.target.files))}
+                    onChange={e => setNewTicketFiles(prev => [...prev, ...Array.from(e.target.files)])}
                   />
                 </label>
                 {newTicketFiles.length > 0 && (

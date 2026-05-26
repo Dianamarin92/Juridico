@@ -34,6 +34,25 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+router.delete('/:id', auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await db.query('SELECT * FROM tickets WHERE id = ?', [id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Ticket no encontrado' });
+    if (rows[0].status !== 'pending') return res.status(403).json({ error: 'Solo se pueden eliminar tickets pendientes' });
+    if (req.user.role === 'cliente' && rows[0].company_id !== req.user.company_id)
+      return res.status(403).json({ error: 'Sin permisos' });
+
+    await db.query('DELETE FROM audit_logs WHERE ticket_id = ?', [id]);
+    await db.query('DELETE FROM messages WHERE ticket_id = ?', [id]);
+    await db.query('DELETE FROM file_uploads WHERE ticket_id = ?', [id]);
+    await db.query('DELETE FROM tickets WHERE id = ?', [id]);
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: 'Error al eliminar ticket' });
+  }
+});
+
 router.put('/:id', auth, async (req, res) => {
   const { status, assigned_to } = req.body;
   const { id } = req.params;

@@ -35,6 +35,8 @@ export const createTicket = (data) =>
   request('/tickets', { method: 'POST', body: JSON.stringify(data) });
 export const updateTicket = (id, data) =>
   request(`/tickets/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteTicket = (id) =>
+  request(`/tickets/${id}`, { method: 'DELETE' });
 
 // Mensajes
 export const getMessages = (ticket_id) => request(`/messages?ticket_id=${ticket_id}`);
