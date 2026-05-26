@@ -697,8 +697,8 @@ export default function App() {
 
       {/* MODAL EDITAR PERFIL CLIENTE */}
       {isEditProfileOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: 'var(--surface-color)', padding: '2rem', borderRadius: '1rem', width: '500px', maxWidth: '90%', border: '1px solid var(--border-color)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div style={{ backgroundColor: 'var(--surface-color)', padding: '2rem', borderRadius: '1rem', width: '500px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--border-color)' }}>
             <h2 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Mi Perfil</h2>
             <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {[
@@ -746,8 +746,8 @@ export default function App() {
 
       {/* MODAL CREAR EMPRESA */}
       {isCreateCompanyOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: 'var(--surface-color)', padding: '2rem', borderRadius: '1rem', width: '500px', maxWidth: '90%', border: '1px solid var(--border-color)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div style={{ backgroundColor: 'var(--surface-color)', padding: '2rem', borderRadius: '1rem', width: '500px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--border-color)' }}>
             <h2 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Nueva Empresa</h2>
             <form onSubmit={handleCreateCompany} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {[
