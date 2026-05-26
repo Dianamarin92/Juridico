@@ -52,19 +52,20 @@ export default function App() {
   useEffect(() => {
     if (!isLoggedIn) return;
 
-    if (isCliente && user.company_id) {
+    if (isCliente) {
+      const cid = Number(user.company_id);
       // Cliente va directo a sus tickets
       setCurrentView('companyDetail');
-      setSelectedCompany({ id: user.company_id, name: '' });
+      setSelectedCompany({ id: cid, name: 'Mis Casos' });
       setLoading(true);
-      api.getTickets(user.company_id)
+      api.getTickets(cid)
         .then(setTickets)
         .catch(() => setError('Error al cargar tickets'))
         .finally(() => setLoading(false));
-      // Cargar nombre de empresa en paralelo
+      // Cargar nombre real de empresa en paralelo
       api.getCompanies()
         .then(data => {
-          const mine = data.find(c => c.id === user.company_id);
+          const mine = data.find(c => Number(c.id) === cid);
           if (mine) setSelectedCompany(mine);
         })
         .catch(() => {});
@@ -302,8 +303,8 @@ export default function App() {
 
         <section className="content-area">
 
-          {/* DASHBOARD */}
-          {currentView === 'dashboard' && (
+          {/* DASHBOARD — solo para roles administrativos */}
+          {currentView === 'dashboard' && !isCliente && (
             <>
               <div className="view-header">
                 <div>
