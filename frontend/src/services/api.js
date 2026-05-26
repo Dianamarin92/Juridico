@@ -28,6 +28,12 @@ export const login = (username, password) =>
 export const getCompanies = () => request('/companies');
 export const createCompany = (data) =>
   request('/companies', { method: 'POST', body: JSON.stringify(data) });
+export const updateCompany = (id, data) =>
+  request(`/companies/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteCompany = (id) =>
+  request(`/companies/${id}`, { method: 'DELETE' });
+export const updateMyPassword = (password) =>
+  request('/users/me/password', { method: 'PUT', body: JSON.stringify({ password }) });
 
 // Tickets
 export const getTickets = (company_id) => request(`/tickets?company_id=${company_id}`);

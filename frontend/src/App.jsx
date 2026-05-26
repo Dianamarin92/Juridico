@@ -45,7 +45,11 @@ export default function App() {
   const [newTicketFiles, setNewTicketFiles]   = useState([]);
 
   const [isCreateCompanyOpen, setIsCreateCompanyOpen] = useState(false);
-  const [newCompany, setNewCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '' });
+  const [newCompany, setNewCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '', username: '', password: '' });
+
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [editCompany, setEditCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '' });
+  const [editPassword, setEditPassword] = useState('');
 
   const chatEndRef = useRef(null);
 
@@ -193,12 +197,45 @@ export default function App() {
 
   const handleCreateCompany = async (e) => {
     e.preventDefault();
-    if (!newCompany.name.trim()) return;
     try {
       await api.createCompany(newCompany);
       setIsCreateCompanyOpen(false);
-      setNewCompany({ name: '', nit: '', contact_name: '', phone: '', email: '' });
+      setNewCompany({ name: '', nit: '', contact_name: '', phone: '', email: '', username: '', password: '' });
       setCompanies(await api.getCompanies());
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleDeleteCompany = async (company) => {
+    if (!window.confirm(`¿Eliminar "${company.name}"? Se borrarán todos sus tickets y el usuario cliente.`)) return;
+    try {
+      await api.deleteCompany(company.id);
+      setCompanies(await api.getCompanies());
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const openEditProfile = () => {
+    setEditCompany({
+      name:         selectedCompany?.name         || '',
+      nit:          selectedCompany?.nit           || '',
+      contact_name: selectedCompany?.contact_name  || '',
+      phone:        selectedCompany?.phone         || '',
+      email:        selectedCompany?.email         || '',
+    });
+    setEditPassword('');
+    setIsEditProfileOpen(true);
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    try {
+      await api.updateCompany(selectedCompany.id, editCompany);
+      if (editPassword) await api.updateMyPassword(editPassword);
+      setSelectedCompany(prev => ({ ...prev, ...editCompany }));
+      setIsEditProfileOpen(false);
     } catch (err) {
       setError(err.message);
     }
@@ -313,9 +350,14 @@ export default function App() {
             Directorio de Empresas
           </div>
         ) : (
-          <div className={`nav-link ${currentView !== 'dashboard' ? 'active' : ''}`} onClick={() => selectedCompany && openCompany(selectedCompany)}>
-            Mis Tickets
-          </div>
+          <>
+            <div className={`nav-link ${currentView === 'companyDetail' ? 'active' : ''}`} onClick={() => selectedCompany && openCompany(selectedCompany)}>
+              Mis Tickets
+            </div>
+            <div className={`nav-link ${currentView === 'editProfile' ? 'active' : ''}`} onClick={openEditProfile}>
+              Mi Perfil
+            </div>
+          </>
         )}
         {role === 'steven_marin' && (
           <div className={`nav-link ${currentView === 'reports' ? 'active' : ''}`} onClick={() => setCurrentView('reports')}>
@@ -373,13 +415,16 @@ export default function App() {
                     </thead>
                     <tbody>
                       {companies.map(company => (
-                        <tr key={company.id} onClick={() => openCompany(company)}>
-                          <td><div className="company-name-cell">{company.name}</div></td>
+                        <tr key={company.id}>
+                          <td onClick={() => openCompany(company)} style={{ cursor: 'pointer' }}><div className="company-name-cell">{company.name}</div></td>
                           <td style={{ textAlign: 'center' }}><span style={{ color: 'var(--text-muted)' }}>—</span></td>
                           <td style={{ textAlign: 'center' }}><span style={{ color: 'var(--text-muted)' }}>—</span></td>
                           <td style={{ textAlign: 'center' }}><span style={{ color: 'var(--text-muted)' }}>—</span></td>
                           <td style={{ textAlign: 'center' }}><span style={{ color: 'var(--text-muted)' }}>—</span></td>
-                          <td><button className="btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Ver Detalle →</button></td>
+                          <td style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <button className="btn-secondary" onClick={() => openCompany(company)} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Ver →</button>
+                            <button onClick={() => handleDeleteCompany(company)} style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: 'none', border: '1px solid #dc2626', color: '#dc2626', borderRadius: '0.4rem', cursor: 'pointer' }}>Eliminar</button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -650,6 +695,55 @@ export default function App() {
         </section>
       </main>
 
+      {/* MODAL EDITAR PERFIL CLIENTE */}
+      {isEditProfileOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: 'var(--surface-color)', padding: '2rem', borderRadius: '1rem', width: '500px', maxWidth: '90%', border: '1px solid var(--border-color)' }}>
+            <h2 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Mi Perfil</h2>
+            <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {[
+                { field: 'name',         label: 'Nombre de la empresa',  placeholder: '', required: true },
+                { field: 'nit',          label: 'NIT',                   placeholder: '' },
+                { field: 'contact_name', label: 'Persona de contacto',   placeholder: '' },
+                { field: 'phone',        label: 'Teléfono',              placeholder: '' },
+                { field: 'email',        label: 'Correo electrónico',    placeholder: '' },
+              ].map(({ field, label, placeholder, required }) => (
+                <div key={field}>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                    {label} {required && <span style={{ color: '#dc2626' }}>*</span>}
+                  </label>
+                  <input
+                    type="text"
+                    value={editCompany[field]}
+                    onChange={e => setEditCompany(prev => ({ ...prev, [field]: e.target.value }))}
+                    placeholder={placeholder}
+                    required={required}
+                    style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
+                  />
+                </div>
+              ))}
+              <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '0.25rem 0' }} />
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                  Nueva contraseña <span style={{ color: 'var(--text-muted)', fontWeight: '400' }}>(dejar vacío para no cambiar)</span>
+                </label>
+                <input
+                  type="password"
+                  value={editPassword}
+                  onChange={e => setEditPassword(e.target.value)}
+                  placeholder="••••••••"
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                <button type="button" className="btn-secondary" onClick={() => setIsEditProfileOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Guardar Cambios</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* MODAL CREAR EMPRESA */}
       {isCreateCompanyOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
@@ -669,6 +763,26 @@ export default function App() {
                   </label>
                   <input
                     type="text"
+                    value={newCompany[field]}
+                    onChange={e => setNewCompany(prev => ({ ...prev, [field]: e.target.value }))}
+                    placeholder={placeholder}
+                    required={required}
+                    style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
+                  />
+                </div>
+              ))}
+              <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '0.25rem 0' }} />
+              <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)' }}>Acceso del cliente al portal</p>
+              {[
+                { field: 'username', label: 'Usuario (Cédula / NIT)', placeholder: 'Ej. 900123456', required: true, type: 'text' },
+                { field: 'password', label: 'Contraseña',             placeholder: '••••••••',      required: true, type: 'password' },
+              ].map(({ field, label, placeholder, required, type }) => (
+                <div key={field}>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                    {label} <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
+                  <input
+                    type={type}
                     value={newCompany[field]}
                     onChange={e => setNewCompany(prev => ({ ...prev, [field]: e.target.value }))}
                     placeholder={placeholder}
