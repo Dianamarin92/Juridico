@@ -44,6 +44,9 @@ export default function App() {
   const [newTicketDesc, setNewTicketDesc]     = useState('');
   const [newTicketFiles, setNewTicketFiles]   = useState([]);
 
+  const [isCreateCompanyOpen, setIsCreateCompanyOpen] = useState(false);
+  const [newCompany, setNewCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '' });
+
   const chatEndRef = useRef(null);
 
   const isLoggedIn = !!user;
@@ -183,6 +186,19 @@ export default function App() {
       const lawyer = lawyers.find(l => l.id === parseInt(newAssignedId));
       setSelectedTicket(prev => ({ ...prev, assigned_to: newAssignedId || null, assigned_email: lawyer?.email || null }));
       setTickets(await api.getTickets(selectedCompany.id));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleCreateCompany = async (e) => {
+    e.preventDefault();
+    if (!newCompany.name.trim()) return;
+    try {
+      await api.createCompany(newCompany);
+      setIsCreateCompanyOpen(false);
+      setNewCompany({ name: '', nit: '', contact_name: '', phone: '', email: '' });
+      setCompanies(await api.getCompanies());
     } catch (err) {
       setError(err.message);
     }
@@ -340,6 +356,7 @@ export default function App() {
                   <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Directorio de Empresas</h1>
                   <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Estado general de casos por cliente.</p>
                 </div>
+                <button className="btn-primary" onClick={() => setIsCreateCompanyOpen(true)}>+ Nueva Empresa</button>
               </div>
               {loading ? <p style={{ color: 'var(--text-muted)' }}>Cargando...</p> : (
                 <div className="table-container">
@@ -632,6 +649,42 @@ export default function App() {
           )}
         </section>
       </main>
+
+      {/* MODAL CREAR EMPRESA */}
+      {isCreateCompanyOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: 'var(--surface-color)', padding: '2rem', borderRadius: '1rem', width: '500px', maxWidth: '90%', border: '1px solid var(--border-color)' }}>
+            <h2 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Nueva Empresa</h2>
+            <form onSubmit={handleCreateCompany} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {[
+                { field: 'name',         label: 'Nombre de la empresa',  placeholder: 'Ej. Distribuidora del Norte', required: true },
+                { field: 'nit',          label: 'NIT',                   placeholder: 'Ej. 900123456-7' },
+                { field: 'contact_name', label: 'Persona de contacto',   placeholder: 'Ej. Juan García' },
+                { field: 'phone',        label: 'Teléfono',              placeholder: 'Ej. 3001234567' },
+                { field: 'email',        label: 'Correo electrónico',    placeholder: 'Ej. contacto@empresa.com' },
+              ].map(({ field, label, placeholder, required }) => (
+                <div key={field}>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                    {label} {required && <span style={{ color: '#dc2626' }}>*</span>}
+                  </label>
+                  <input
+                    type="text"
+                    value={newCompany[field]}
+                    onChange={e => setNewCompany(prev => ({ ...prev, [field]: e.target.value }))}
+                    placeholder={placeholder}
+                    required={required}
+                    style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
+                  />
+                </div>
+              ))}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                <button type="button" className="btn-secondary" onClick={() => setIsCreateCompanyOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Crear Empresa</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* MODAL CREAR TICKET */}
       {isCreateModalOpen && (

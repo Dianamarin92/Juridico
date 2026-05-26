@@ -14,10 +14,14 @@ router.get('/', auth, async (req, res) => {
 });
 
 router.post('/', auth, async (req, res) => {
-  const { name } = req.body;
+  const { name, nit, contact_name, phone, email } = req.body;
+  if (!name) return res.status(400).json({ error: 'El nombre es requerido' });
   try {
-    const [result] = await db.query('INSERT INTO companies (name) VALUES (?)', [name]);
-    res.status(201).json({ id: result.insertId, name });
+    const [result] = await db.query(
+      'INSERT INTO companies (name, nit, contact_name, phone, email) VALUES (?, ?, ?, ?, ?)',
+      [name, nit || null, contact_name || null, phone || null, email || null]
+    );
+    res.status(201).json({ id: result.insertId, name, nit, contact_name, phone, email });
   } catch {
     res.status(500).json({ error: 'Error al crear empresa' });
   }

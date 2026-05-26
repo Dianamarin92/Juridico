@@ -26,8 +26,8 @@ export const login = (username, password) =>
 
 // Empresas
 export const getCompanies = () => request('/companies');
-export const createCompany = (name) =>
-  request('/companies', { method: 'POST', body: JSON.stringify({ name }) });
+export const createCompany = (data) =>
+  request('/companies', { method: 'POST', body: JSON.stringify(data) });
 
 // Tickets
 export const getTickets = (company_id) => request(`/tickets?company_id=${company_id}`);
