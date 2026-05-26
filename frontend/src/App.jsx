@@ -188,6 +188,15 @@ export default function App() {
     }
   };
 
+  const handleDeleteFile = async (fileId) => {
+    try {
+      await api.deleteFile(fileId);
+      setFiles(await api.getFiles(selectedTicket.id));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const handleDeleteTicket = async () => {
     if (!window.confirm('¿Seguro que deseas eliminar este ticket? Esta acción no se puede deshacer.')) return;
     try {
@@ -292,7 +301,6 @@ export default function App() {
             Mis Tickets
           </div>
         )}
-        <div className="nav-link">Documentos Plantilla</div>
         {role === 'steven_marin' && (
           <div className={`nav-link ${currentView === 'reports' ? 'active' : ''}`} onClick={() => setCurrentView('reports')}>
             Informes
@@ -607,7 +615,12 @@ export default function App() {
                         {files.length === 0 && <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Sin archivos adjuntos.</p>}
                         {files.map(f => (
                           <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', background: 'var(--bg-color)', borderRadius: '0.5rem', fontSize: '0.875rem' }}>
-                            📄 {f.filename}
+                            <span style={{ flex: 1 }}>📄 {f.filename}</span>
+                            <button
+                              onClick={() => handleDeleteFile(f.id)}
+                              title="Eliminar archivo"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontWeight: 'bold', fontSize: '1rem', lineHeight: 1, padding: '0 0.25rem' }}
+                            >×</button>
                           </div>
                         ))}
                       </div>

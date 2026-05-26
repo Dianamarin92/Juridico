@@ -48,6 +48,7 @@ export const getUsers = () => request('/users');
 
 // Archivos
 export const getFiles = (ticket_id) => request(`/files?ticket_id=${ticket_id}`);
+export const deleteFile = (id) => request(`/files/${id}`, { method: 'DELETE' });
 export const uploadFile = (ticket_id, file) => {
   const form = new FormData();
   form.append('file', file);

@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const db = require('../config/db');
 const auth = require('../middleware/auth');
 
@@ -41,6 +42,22 @@ router.get('/', auth, async (req, res) => {
     res.json(rows);
   } catch {
     res.status(500).json({ error: 'Error al obtener archivos' });
+  }
+});
+
+router.delete('/:id', auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await db.query('SELECT * FROM file_uploads WHERE id = ?', [id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Archivo no encontrado' });
+
+    const fullPath = path.join(__dirname, '../../', rows[0].path);
+    fs.unlink(fullPath, () => {});
+
+    await db.query('DELETE FROM file_uploads WHERE id = ?', [id]);
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: 'Error al eliminar archivo' });
   }
 });
 
