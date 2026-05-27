@@ -47,7 +47,6 @@ export default function App() {
   const [isCreateCompanyOpen, setIsCreateCompanyOpen] = useState(false);
   const [newCompany, setNewCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '', username: '', password: '' });
 
-  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editCompany, setEditCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '' });
   const [editPassword, setEditPassword] = useState('');
 
@@ -226,7 +225,7 @@ export default function App() {
       email:        selectedCompany?.email         || '',
     });
     setEditPassword('');
-    setIsEditProfileOpen(true);
+    setCurrentView('profile');
   };
 
   const handleSaveProfile = async (e) => {
@@ -235,7 +234,8 @@ export default function App() {
       await api.updateCompany(selectedCompany.id, editCompany);
       if (editPassword) await api.updateMyPassword(editPassword);
       setSelectedCompany(prev => ({ ...prev, ...editCompany }));
-      setIsEditProfileOpen(false);
+      setError('');
+      alert('Cambios guardados correctamente.');
     } catch (err) {
       setError(err.message);
     }
@@ -354,7 +354,7 @@ export default function App() {
             <div className={`nav-link ${currentView === 'companyDetail' ? 'active' : ''}`} onClick={() => selectedCompany && openCompany(selectedCompany)}>
               Mis Tickets
             </div>
-            <div className={`nav-link ${currentView === 'editProfile' ? 'active' : ''}`} onClick={openEditProfile}>
+            <div className={`nav-link ${currentView === 'profile' ? 'active' : ''}`} onClick={openEditProfile}>
               Mi Perfil
             </div>
           </>
@@ -439,6 +439,69 @@ export default function App() {
             <div style={{ textAlign: 'center', marginTop: '4rem', color: 'var(--text-muted)' }}>
               <h2>Módulo de Informes</h2>
               <p>Esta sección está en construcción.</p>
+            </div>
+          )}
+
+          {/* PERFIL CLIENTE */}
+          {currentView === 'profile' && isCliente && (
+            <div style={{ maxWidth: '600px' }}>
+              <div className="view-header" style={{ marginBottom: '2rem' }}>
+                <div>
+                  <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Mi Perfil</h1>
+                  <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Actualiza los datos de tu empresa y contraseña de acceso.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {/* Datos de empresa */}
+                <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                  <h3 style={{ marginTop: 0, marginBottom: '1.25rem', color: 'var(--primary-color)', fontSize: '1rem' }}>Datos de la Empresa</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {[
+                      { field: 'name',         label: 'Nombre de la empresa', required: true },
+                      { field: 'nit',          label: 'NIT' },
+                      { field: 'contact_name', label: 'Persona de contacto' },
+                      { field: 'phone',        label: 'Teléfono' },
+                      { field: 'email',        label: 'Correo electrónico' },
+                    ].map(({ field, label, required }) => (
+                      <div key={field}>
+                        <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                          {label} {required && <span style={{ color: '#dc2626' }}>*</span>}
+                        </label>
+                        <input
+                          type="text"
+                          value={editCompany[field]}
+                          onChange={e => setEditCompany(prev => ({ ...prev, [field]: e.target.value }))}
+                          required={required}
+                          style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cambiar contraseña */}
+                <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                  <h3 style={{ marginTop: 0, marginBottom: '1.25rem', color: 'var(--primary-color)', fontSize: '1rem' }}>Cambiar Contraseña</h3>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                      Nueva contraseña <span style={{ color: 'var(--text-muted)', fontWeight: '400' }}>(dejar vacío para no cambiar)</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={editPassword}
+                      onChange={e => setEditPassword(e.target.value)}
+                      placeholder="••••••••"
+                      style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                  <button type="button" className="btn-secondary" onClick={() => setCurrentView('companyDetail')}>Cancelar</button>
+                  <button type="submit" className="btn-primary">Guardar Cambios</button>
+                </div>
+              </form>
             </div>
           )}
 
@@ -694,55 +757,6 @@ export default function App() {
           )}
         </section>
       </main>
-
-      {/* MODAL EDITAR PERFIL CLIENTE */}
-      {isEditProfileOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div style={{ backgroundColor: 'var(--surface-color)', padding: '2rem', borderRadius: '1rem', width: '500px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--border-color)' }}>
-            <h2 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Mi Perfil</h2>
-            <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {[
-                { field: 'name',         label: 'Nombre de la empresa',  placeholder: '', required: true },
-                { field: 'nit',          label: 'NIT',                   placeholder: '' },
-                { field: 'contact_name', label: 'Persona de contacto',   placeholder: '' },
-                { field: 'phone',        label: 'Teléfono',              placeholder: '' },
-                { field: 'email',        label: 'Correo electrónico',    placeholder: '' },
-              ].map(({ field, label, placeholder, required }) => (
-                <div key={field}>
-                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
-                    {label} {required && <span style={{ color: '#dc2626' }}>*</span>}
-                  </label>
-                  <input
-                    type="text"
-                    value={editCompany[field]}
-                    onChange={e => setEditCompany(prev => ({ ...prev, [field]: e.target.value }))}
-                    placeholder={placeholder}
-                    required={required}
-                    style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
-                  />
-                </div>
-              ))}
-              <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '0.25rem 0' }} />
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
-                  Nueva contraseña <span style={{ color: 'var(--text-muted)', fontWeight: '400' }}>(dejar vacío para no cambiar)</span>
-                </label>
-                <input
-                  type="password"
-                  value={editPassword}
-                  onChange={e => setEditPassword(e.target.value)}
-                  placeholder="••••••••"
-                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
-                />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
-                <button type="button" className="btn-secondary" onClick={() => setIsEditProfileOpen(false)}>Cancelar</button>
-                <button type="submit" className="btn-primary">Guardar Cambios</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* MODAL CREAR EMPRESA */}
       {isCreateCompanyOpen && (
