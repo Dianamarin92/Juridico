@@ -129,6 +129,7 @@ Todas las rutas son relativas a `https://api.marinabogados.funec.org`:
 | GET | `/files` | Archivos de un ticket |
 | DELETE | `/files/:id` | Eliminar archivo |
 | GET | `/users` | Listar abogadas (para asignación) |
+| POST | `/users` | Crear usuario administrativo (rol: abogada_asignada o abogada_lider) |
 | PUT | `/users/me/password` | Cambiar contraseña del usuario autenticado |
 | GET | `/health` | Health check |
 
@@ -174,21 +175,30 @@ frontend/src/
     └── api.js           Capa HTTP → llama a api.marinabogados.funec.org
 ```
 
-## Funcionalidades implementadas (al 2026-05-26)
+## Funcionalidades implementadas (al 2026-05-27)
 
 ### Vista cliente
 - Al iniciar sesión va directo a **Mis Tickets** (no pasa por directorio de empresas)
+- **Nombre de empresa** visible en la esquina superior derecha de la barra de navegación
 - **Resumen por estado** en 4 tarjetas: Pendientes / En Proceso / En Revisión / Enviados
 - Lista de tickets como tarjetas con título, fecha y badge de estado
 - **Crear ticket:** modal con asunto, descripción y adjuntar múltiples archivos; la descripción se envía automáticamente como primer mensaje del hilo
 - **Eliminar ticket:** botón rojo visible solo si el ticket está en estado `pending`
-- **Mi Perfil** en el sidebar: editar datos de empresa (nombre, NIT, contacto, teléfono, correo) y cambiar contraseña
+- **Mi Perfil** en el sidebar: página completa (no modal) para editar datos de empresa (nombre, NIT, contacto, teléfono, correo) y cambiar contraseña
 - Panel de adjuntos en ticket: botón **×** para eliminar cada archivo
 
 ### Vista admin (abogadas / Steven Marín)
+- **Directorio de empresas** muestra conteo de tickets por estado (badges de color) en cada fila, usando LEFT JOIN en la consulta SQL
 - **+ Nueva Empresa:** formulario con datos de empresa (nombre, NIT, contacto, teléfono, correo) y acceso del cliente (usuario + contraseña) — crea empresa y usuario cliente en un solo paso
+- **+ Nuevo Usuario:** formulario para crear usuarios administrativos (Abogada Asignada o Abogada Líder) — sin acceso al módulo de Informes
 - **Eliminar empresa:** botón en cada fila del directorio — borra empresa, usuario cliente y todos sus tickets en cascada
 - Login por `username` (cédula/NIT), no por email
+
+### Indicadores de carga
+- **Barra roja animada** fija en la parte superior en todas las pantallas (login incluido) durante cualquier petición
+- **Spinner giratorio** con texto dentro de cada sección mientras carga su contenido
+- **Botones de formularios** se deshabilitan y muestran texto descriptivo ("Creando...", "Guardando...", "Enviando...") mientras procesa
+- Estado `loading` para consultas de datos; estado `busy` para mutaciones (crear, eliminar, guardar)
 
 ### General
 - Deploy FTP a veces da timeout — si falla, re-ejecutar desde GitHub Actions → Re-run jobs
