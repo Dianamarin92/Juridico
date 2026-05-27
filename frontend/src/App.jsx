@@ -32,6 +32,7 @@ export default function App() {
   const [selectedTicket, setSelectedTicket]   = useState(null);
 
   const [loading, setLoading]     = useState(false);
+  const [busy, setBusy]           = useState(false);
   const [error, setError]         = useState('');
 
   const [loginUsername, setLoginUsername] = useState('');
@@ -46,6 +47,9 @@ export default function App() {
 
   const [isCreateCompanyOpen, setIsCreateCompanyOpen] = useState(false);
   const [newCompany, setNewCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '', username: '', password: '' });
+
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
+  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'abogada_asignada' });
 
   const [editCompany, setEditCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '' });
   const [editPassword, setEditPassword] = useState('');
@@ -91,12 +95,15 @@ export default function App() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
+    setBusy(true);
     try {
       const data = await api.login(loginUsername, loginPassword);
       localStorage.setItem('token', data.token);
       setUser(data.user);
     } catch (err) {
       setLoginError(err.message);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -143,47 +150,51 @@ export default function App() {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
+    setBusy(true);
     try {
       await api.sendMessage(selectedTicket.id, chatInput);
       setChatInput('');
       setMessages(await api.getMessages(selectedTicket.id));
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
     }
   };
 
   const handleCreateTicket = async (e) => {
     e.preventDefault();
     if (!newTicketTitle.trim()) return;
+    setBusy(true);
     try {
       const ticket = await api.createTicket({ company_id: selectedCompany.id, title: newTicketTitle, description: newTicketDesc });
-      // Enviar descripción como primer mensaje en el hilo
-      if (newTicketDesc.trim()) {
-        await api.sendMessage(ticket.id, newTicketDesc.trim());
-      }
-      // Subir archivos adjuntos si hay
-      for (const file of newTicketFiles) {
-        await api.uploadFile(ticket.id, file);
-      }
+      if (newTicketDesc.trim()) await api.sendMessage(ticket.id, newTicketDesc.trim());
+      for (const file of newTicketFiles) await api.uploadFile(ticket.id, file);
       setIsCreateModalOpen(false);
       setNewTicketTitle(''); setNewTicketDesc(''); setNewTicketFiles([]);
       setTickets(await api.getTickets(selectedCompany.id));
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
     }
   };
 
   const handleChangeStatus = async (newStatus) => {
+    setBusy(true);
     try {
       await api.updateTicket(selectedTicket.id, { status: newStatus, assigned_to: selectedTicket.assigned_to });
       setSelectedTicket(prev => ({ ...prev, status: newStatus }));
       setTickets(await api.getTickets(selectedCompany.id));
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
     }
   };
 
   const handleChangeAssignment = async (newAssignedId) => {
+    setBusy(true);
     try {
       await api.updateTicket(selectedTicket.id, { status: selectedTicket.status, assigned_to: newAssignedId || null });
       const lawyer = lawyers.find(l => l.id === parseInt(newAssignedId));
@@ -191,11 +202,14 @@ export default function App() {
       setTickets(await api.getTickets(selectedCompany.id));
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
     }
   };
 
   const handleCreateCompany = async (e) => {
     e.preventDefault();
+    setBusy(true);
     try {
       await api.createCompany(newCompany);
       setIsCreateCompanyOpen(false);
@@ -203,16 +217,21 @@ export default function App() {
       setCompanies(await api.getCompanies());
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
     }
   };
 
   const handleDeleteCompany = async (company) => {
     if (!window.confirm(`¿Eliminar "${company.name}"? Se borrarán todos sus tickets y el usuario cliente.`)) return;
+    setBusy(true);
     try {
       await api.deleteCompany(company.id);
       setCompanies(await api.getCompanies());
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -230,28 +249,50 @@ export default function App() {
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
+    setBusy(true);
     try {
       await api.updateCompany(selectedCompany.id, editCompany);
       if (editPassword) await api.updateMyPassword(editPassword);
       setSelectedCompany(prev => ({ ...prev, ...editCompany }));
+      setEditPassword('');
       setError('');
-      alert('Cambios guardados correctamente.');
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await api.createUser(newUser);
+      setIsCreateUserOpen(false);
+      setNewUser({ username: '', password: '', role: 'abogada_asignada' });
+      setLawyers(await api.getUsers());
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
     }
   };
 
   const handleDeleteFile = async (fileId) => {
+    setBusy(true);
     try {
       await api.deleteFile(fileId);
       setFiles(await api.getFiles(selectedTicket.id));
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
     }
   };
 
   const handleDeleteTicket = async () => {
     if (!window.confirm('¿Seguro que deseas eliminar este ticket? Esta acción no se puede deshacer.')) return;
+    setBusy(true);
     try {
       await api.deleteTicket(selectedTicket.id);
       setSelectedTicket(null);
@@ -259,17 +300,22 @@ export default function App() {
       setTickets(await api.getTickets(selectedCompany.id));
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
     }
   };
 
   const handleUploadFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setBusy(true);
     try {
       await api.uploadFile(selectedTicket.id, file);
       setFiles(await api.getFiles(selectedTicket.id));
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -284,6 +330,7 @@ export default function App() {
   if (!isLoggedIn) {
     return (
       <div className="login-wrapper">
+        {busy && <div className="loading-bar" />}
         <div className="login-card">
           <img src="/logo.jpg" alt="Marin & Abogados" style={{ maxHeight: '80px', marginBottom: '1rem', objectFit: 'contain' }} />
           <h1 style={{ margin: '0 0 0.25rem', color: 'var(--primary-color)' }}>Marin & Abogados</h1>
@@ -331,7 +378,7 @@ export default function App() {
   // ── APP ───────────────────────────────────────────────
   return (
     <div className="app-container">
-      {loading && <div className="loading-bar" />}
+      {(loading || busy) && <div className="loading-bar" />}
       {error && (
         <div style={{ position: 'fixed', top: '1rem', right: '1rem', background: '#fee2e2', color: '#b91c1c', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', zIndex: 200, fontSize: '0.875rem', boxShadow: '0 4px 12px rgba(0,0,0,.15)' }}>
           {error}
@@ -379,6 +426,11 @@ export default function App() {
             Gestión Centralizada — {ROLE_LABELS[role] || role}
           </div>
           <div className="user-info">
+            {isCliente && selectedCompany?.name && (
+              <span style={{ color: '#ffffff', fontWeight: '600', fontSize: '0.95rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {selectedCompany.name}
+              </span>
+            )}
             <span className="role-badge">{ROLE_LABELS[role] || role}</span>
             <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: 'var(--accent-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
               {(user.username || '?').charAt(0).toUpperCase()}
@@ -399,7 +451,10 @@ export default function App() {
                   <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Directorio de Empresas</h1>
                   <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Estado general de casos por cliente.</p>
                 </div>
-                <button className="btn-primary" onClick={() => setIsCreateCompanyOpen(true)}>+ Nueva Empresa</button>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button className="btn-secondary" onClick={() => setIsCreateUserOpen(true)}>+ Nuevo Usuario</button>
+                  <button className="btn-primary" onClick={() => setIsCreateCompanyOpen(true)}>+ Nueva Empresa</button>
+                </div>
               </div>
               {loading ? (
                 <div className="spinner-wrapper"><div className="spinner" /><span>Cargando empresas...</span></div>
@@ -521,7 +576,7 @@ export default function App() {
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                   <button type="button" className="btn-secondary" onClick={() => setCurrentView('companyDetail')}>Cancelar</button>
-                  <button type="submit" className="btn-primary">Guardar Cambios</button>
+                  <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Guardando...' : 'Guardar Cambios'}</button>
                 </div>
               </form>
             </div>
@@ -786,6 +841,58 @@ export default function App() {
         </section>
       </main>
 
+      {/* MODAL CREAR USUARIO ADMIN */}
+      {isCreateUserOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div style={{ backgroundColor: 'var(--surface-color)', padding: '2rem', borderRadius: '1rem', width: '440px', maxWidth: '100%', border: '1px solid var(--border-color)' }}>
+            <h2 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Nuevo Usuario</h2>
+            <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                  Usuario (Cédula) <span style={{ color: '#dc2626' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newUser.username}
+                  onChange={e => setNewUser(prev => ({ ...prev, username: e.target.value }))}
+                  placeholder="Ej. 1020304050"
+                  required
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                  Contraseña <span style={{ color: '#dc2626' }}>*</span>
+                </label>
+                <input
+                  type="password"
+                  value={newUser.password}
+                  onChange={e => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="••••••••"
+                  required
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>Rol</label>
+                <select
+                  value={newUser.role}
+                  onChange={e => setNewUser(prev => ({ ...prev, role: e.target.value }))}
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
+                >
+                  <option value="abogada_asignada">Abogada Asignada</option>
+                  <option value="abogada_lider">Abogada Líder</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                <button type="button" className="btn-secondary" onClick={() => setIsCreateUserOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Creando...' : 'Crear Usuario'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* MODAL CREAR EMPRESA */}
       {isCreateCompanyOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
@@ -835,7 +942,7 @@ export default function App() {
               ))}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                 <button type="button" className="btn-secondary" onClick={() => setIsCreateCompanyOpen(false)}>Cancelar</button>
-                <button type="submit" className="btn-primary">Crear Empresa</button>
+                <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Creando...' : 'Crear Empresa'}</button>
               </div>
             </form>
           </div>
@@ -891,7 +998,7 @@ export default function App() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                 <button type="button" className="btn-secondary" onClick={() => { setIsCreateModalOpen(false); setNewTicketFiles([]); }}>Cancelar</button>
-                <button type="submit" className="btn-primary">Enviar Ticket</button>
+                <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Enviando...' : 'Enviar Ticket'}</button>
               </div>
             </form>
           </div>
