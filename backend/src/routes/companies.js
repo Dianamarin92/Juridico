@@ -7,7 +7,17 @@ const router = express.Router();
 
 router.get('/', auth, async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM companies ORDER BY name');
+    const [rows] = await db.query(`
+      SELECT c.*,
+        COALESCE(SUM(t.status = 'pending'),  0) AS pending_count,
+        COALESCE(SUM(t.status = 'progress'), 0) AS progress_count,
+        COALESCE(SUM(t.status = 'review'),   0) AS review_count,
+        COALESCE(SUM(t.status = 'done'),     0) AS done_count
+      FROM companies c
+      LEFT JOIN tickets t ON t.company_id = c.id
+      GROUP BY c.id
+      ORDER BY c.name
+    `);
     res.json(rows);
   } catch {
     res.status(500).json({ error: 'Error al obtener empresas' });

@@ -331,6 +331,7 @@ export default function App() {
   // ── APP ───────────────────────────────────────────────
   return (
     <div className="app-container">
+      {loading && <div className="loading-bar" />}
       {error && (
         <div style={{ position: 'fixed', top: '1rem', right: '1rem', background: '#fee2e2', color: '#b91c1c', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', zIndex: 200, fontSize: '0.875rem', boxShadow: '0 4px 12px rgba(0,0,0,.15)' }}>
           {error}
@@ -400,7 +401,9 @@ export default function App() {
                 </div>
                 <button className="btn-primary" onClick={() => setIsCreateCompanyOpen(true)}>+ Nueva Empresa</button>
               </div>
-              {loading ? <p style={{ color: 'var(--text-muted)' }}>Cargando...</p> : (
+              {loading ? (
+                <div className="spinner-wrapper"><div className="spinner" /><span>Cargando empresas...</span></div>
+              ) : (
                 <div className="table-container">
                   <table className="data-table">
                     <thead>
@@ -414,13 +417,32 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody>
+                      {companies.length === 0 && (
+                        <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No hay empresas registradas.</td></tr>
+                      )}
                       {companies.map(company => (
                         <tr key={company.id}>
                           <td onClick={() => openCompany(company)} style={{ cursor: 'pointer' }}><div className="company-name-cell">{company.name}</div></td>
-                          <td style={{ textAlign: 'center' }}><span style={{ color: 'var(--text-muted)' }}>—</span></td>
-                          <td style={{ textAlign: 'center' }}><span style={{ color: 'var(--text-muted)' }}>—</span></td>
-                          <td style={{ textAlign: 'center' }}><span style={{ color: 'var(--text-muted)' }}>—</span></td>
-                          <td style={{ textAlign: 'center' }}><span style={{ color: 'var(--text-muted)' }}>—</span></td>
+                          <td style={{ textAlign: 'center' }}>
+                            {company.pending_count > 0
+                              ? <span className="count-badge status-pending">{company.pending_count}</span>
+                              : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            {company.progress_count > 0
+                              ? <span className="count-badge status-progress">{company.progress_count}</span>
+                              : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            {company.review_count > 0
+                              ? <span className="count-badge status-review">{company.review_count}</span>
+                              : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            {company.done_count > 0
+                              ? <span className="count-badge status-done">{company.done_count}</span>
+                              : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                          </td>
                           <td style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <button className="btn-secondary" onClick={() => openCompany(company)} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Ver →</button>
                             <button onClick={() => handleDeleteCompany(company)} style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: 'none', border: '1px solid #dc2626', color: '#dc2626', borderRadius: '0.4rem', cursor: 'pointer' }}>Eliminar</button>
@@ -519,7 +541,9 @@ export default function App() {
                     <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)}>+ Nuevo Ticket</button>
                   </div>
 
-                  {loading ? <p style={{ color: 'var(--text-muted)' }}>Cargando...</p> : (
+                  {loading ? (
+                    <div className="spinner-wrapper"><div className="spinner" /><span>Cargando tickets...</span></div>
+                  ) : (
                     <>
                       {/* Resumen de estados */}
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -588,7 +612,9 @@ export default function App() {
                     </div>
                   </div>
 
-                  {loading ? <p style={{ color: 'var(--text-muted)' }}>Cargando tickets...</p> : (
+                  {loading ? (
+                    <div className="spinner-wrapper"><div className="spinner" /><span>Cargando tickets...</span></div>
+                  ) : (
                     <div className="table-container">
                       <table className="data-table">
                         <thead>
@@ -662,7 +688,9 @@ export default function App() {
                 )}
               </div>
 
-              {loading ? <p style={{ color: 'var(--text-muted)' }}>Cargando...</p> : (
+              {loading ? (
+                <div className="spinner-wrapper"><div className="spinner" /><span>Cargando ticket...</span></div>
+              ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem' }}>
                   {/* CHAT */}
                   <div className="chat-container" style={{ height: '500px' }}>
