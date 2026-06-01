@@ -163,7 +163,7 @@ ALTER TABLE companies
 ALTER TABLE users ADD COLUMN username VARCHAR(50) NOT NULL UNIQUE AFTER id;
 ```
 
-### Columnas añadidas (ALTER pendiente de ejecutar en producción)
+### Columnas `is_new` y `is_active` (ALTER ejecutado en producción — 2026-06-01)
 
 ```sql
 ALTER TABLE tickets ADD COLUMN is_new TINYINT(1) NOT NULL DEFAULT 1;
@@ -221,11 +221,6 @@ frontend/src/
 
 ## Pendientes
 
-- [ ] **Ejecutar en producción (phpMyAdmin):**
-  ```sql
-  ALTER TABLE tickets ADD COLUMN is_new TINYINT(1) NOT NULL DEFAULT 1;
-  ALTER TABLE companies ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1;
-  ```
 - [ ] Crear carpeta `uploads/` en servidor via SSH: `mkdir -p public_html/api.marinabogados/uploads`
 - [ ] Actualizar multer a 2.x en backend (advertencia de seguridad en multer 1.x)
 - [ ] Si el deploy de FTP falla por timeout, re-ejecutar manualmente desde GitHub Actions → Re-run jobs
