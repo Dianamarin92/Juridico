@@ -49,7 +49,9 @@ export default function App() {
   const [newCompany, setNewCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '', username: '', password: '' });
 
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
-  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'abogada_asignada' });
+  const [newUser, setNewUser] = useState({ username: '', email: '', password: '', role: 'abogada_asignada' });
+  const [storageInfo, setStorageInfo] = useState({ used: 0, total: 5 * 1024 * 1024 * 1024 });
+  const [adminPassword, setAdminPassword] = useState('');
 
   const [editCompany, setEditCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '' });
   const [editPassword, setEditPassword] = useState('');
@@ -85,6 +87,7 @@ export default function App() {
         .then(setCompanies)
         .catch(() => setError('Error al cargar empresas'));
       api.getUsers().then(setLawyers).catch(() => {});
+      api.getStorage().then(setStorageInfo).catch(() => {});
     }
   }, [isLoggedIn]);
 
@@ -140,6 +143,10 @@ export default function App() {
       ]);
       setMessages(msgs);
       setFiles(fls);
+      if (!isCliente && ticket.is_new) {
+        api.markTicketRead(ticket.id).catch(() => {});
+        setTickets(prev => prev.map(t => t.id === ticket.id ? { ...t, is_new: 0 } : t));
+      }
     } catch {
       setError('Error al cargar ticket');
     } finally {
@@ -269,13 +276,44 @@ export default function App() {
     try {
       await api.createUser(newUser);
       setIsCreateUserOpen(false);
-      setNewUser({ username: '', password: '', role: 'abogada_asignada' });
+      setNewUser({ username: '', email: '', password: '', role: 'abogada_asignada' });
       setLawyers(await api.getUsers());
     } catch (err) {
       setError(err.message);
     } finally {
       setBusy(false);
     }
+  };
+
+  const handleToggleCompany = async (company) => {
+    setBusy(true);
+    try {
+      await api.toggleCompanyActive(company.id, !company.is_active);
+      setCompanies(prev => prev.map(c => c.id === company.id ? { ...c, is_active: !c.is_active } : c));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSaveAdminPassword = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await api.updateMyPassword(adminPassword);
+      setAdminPassword('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const formatBytes = (bytes) => {
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
   };
 
   const handleDeleteFile = async (fileId) => {
@@ -394,9 +432,14 @@ export default function App() {
         </div>
 
         {!isCliente ? (
-          <div className={`nav-link ${currentView === 'dashboard' ? 'active' : ''}`} onClick={() => setCurrentView('dashboard')}>
-            Directorio de Empresas
-          </div>
+          <>
+            <div className={`nav-link ${currentView === 'dashboard' ? 'active' : ''}`} onClick={() => setCurrentView('dashboard')}>
+              Directorio de Empresas
+            </div>
+            <div className={`nav-link ${currentView === 'adminProfile' ? 'active' : ''}`} onClick={() => { setAdminPassword(''); setCurrentView('adminProfile'); }}>
+              Mi Perfil
+            </div>
+          </>
         ) : (
           <>
             <div className={`nav-link ${currentView === 'companyDetail' ? 'active' : ''}`} onClick={() => selectedCompany && openCompany(selectedCompany)}>
@@ -475,9 +518,16 @@ export default function App() {
                       {companies.length === 0 && (
                         <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No hay empresas registradas.</td></tr>
                       )}
-                      {companies.map(company => (
-                        <tr key={company.id}>
-                          <td onClick={() => openCompany(company)} style={{ cursor: 'pointer' }}><div className="company-name-cell">{company.name}</div></td>
+                      {companies.map(company => {
+                        const active = company.is_active !== 0;
+                        return (
+                        <tr key={company.id} style={{ opacity: active ? 1 : 0.55 }}>
+                          <td onClick={() => openCompany(company)} style={{ cursor: 'pointer' }}>
+                            <div className="company-name-cell">
+                              {company.name}
+                              {!active && <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', background: '#f3f4f6', color: '#6b7280', padding: '0.15rem 0.5rem', borderRadius: '999px', fontWeight: '600' }}>Desactivada</span>}
+                            </div>
+                          </td>
                           <td style={{ textAlign: 'center' }}>
                             {company.pending_count > 0
                               ? <span className="count-badge status-pending">{company.pending_count}</span>
@@ -500,10 +550,15 @@ export default function App() {
                           </td>
                           <td style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <button className="btn-secondary" onClick={() => openCompany(company)} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Ver →</button>
+                            <button
+                              onClick={() => handleToggleCompany(company)}
+                              style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: 'none', border: `1px solid ${active ? '#f59e0b' : '#10b981'}`, color: active ? '#b45309' : '#059669', borderRadius: '0.4rem', cursor: 'pointer' }}
+                            >{active ? 'Desactivar' : 'Activar'}</button>
                             <button onClick={() => handleDeleteCompany(company)} style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: 'none', border: '1px solid #dc2626', color: '#dc2626', borderRadius: '0.4rem', cursor: 'pointer' }}>Eliminar</button>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -579,6 +634,63 @@ export default function App() {
                   <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Guardando...' : 'Guardar Cambios'}</button>
                 </div>
               </form>
+            </div>
+          )}
+
+          {/* PERFIL ADMIN */}
+          {currentView === 'adminProfile' && !isCliente && (
+            <div style={{ maxWidth: '600px' }}>
+              <div className="view-header" style={{ marginBottom: '2rem' }}>
+                <div>
+                  <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Mi Perfil</h1>
+                  <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Almacenamiento y configuración de acceso.</p>
+                </div>
+              </div>
+
+              {/* Almacenamiento */}
+              <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)', marginBottom: '1.5rem' }}>
+                <h3 style={{ marginTop: 0, marginBottom: '1.25rem', color: 'var(--primary-color)', fontSize: '1rem' }}>Almacenamiento de Documentos</h3>
+                {(() => {
+                  const pct = Math.min((storageInfo.used / storageInfo.total) * 100, 100);
+                  const barColor = pct > 90 ? '#dc2626' : pct > 70 ? '#f59e0b' : '#10b981';
+                  return (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Usado: <strong style={{ color: 'var(--primary-color)' }}>{formatBytes(storageInfo.used)}</strong></span>
+                        <span style={{ color: 'var(--text-muted)' }}>Total: <strong style={{ color: 'var(--primary-color)' }}>{formatBytes(storageInfo.total)}</strong></span>
+                      </div>
+                      <div style={{ background: 'var(--border-color)', borderRadius: '999px', height: '12px', overflow: 'hidden' }}>
+                        <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: '999px', transition: 'width 0.5s ease' }} />
+                      </div>
+                      <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'right' }}>{pct.toFixed(1)}% utilizado</p>
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Cambiar contraseña */}
+              <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                <h3 style={{ marginTop: 0, marginBottom: '1.25rem', color: 'var(--primary-color)', fontSize: '1rem' }}>Cambiar Contraseña</h3>
+                <form onSubmit={handleSaveAdminPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                      Nueva contraseña <span style={{ color: '#dc2626' }}>*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={adminPassword}
+                      onChange={e => setAdminPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      minLength={4}
+                      style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Guardando...' : 'Cambiar Contraseña'}</button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 
@@ -689,9 +801,11 @@ export default function App() {
                             const status = getStatusInfo(ticket.status);
                             return (
                               <tr key={ticket.id} onClick={() => openTicket(ticket)}>
-                                <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>#{ticket.id}</td>
+                                <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                                  {ticket.is_new ? <span className="alert-dot" title="Ticket nuevo" /> : null}#{ticket.id}
+                                </td>
                                 <td style={{ color: 'var(--text-muted)' }}>{ticket.assigned_email || 'Sin asignar'}</td>
-                                <td style={{ fontWeight: '500', color: 'var(--primary-color)' }}>{ticket.title}</td>
+                                <td style={{ fontWeight: ticket.is_new ? '700' : '500', color: 'var(--primary-color)' }}>{ticket.title}</td>
                                 <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{new Date(ticket.created_at).toLocaleDateString('es-CO')}</td>
                                 <td><span className={`count-badge ${status.cls}`}>{status.text}</span></td>
                               </tr>
@@ -857,6 +971,16 @@ export default function App() {
                   onChange={e => setNewUser(prev => ({ ...prev, username: e.target.value }))}
                   placeholder="Ej. 1020304050"
                   required
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>Correo electrónico</label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={e => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="Ej. abogada@marinabogados.com"
                   style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
                 />
               </div>

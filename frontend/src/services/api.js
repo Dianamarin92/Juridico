@@ -54,6 +54,17 @@ export const getUsers = () => request('/users');
 export const createUser = (data) =>
   request('/users', { method: 'POST', body: JSON.stringify(data) });
 
+// Activar / desactivar empresa
+export const toggleCompanyActive = (id, is_active) =>
+  request(`/companies/${id}/active`, { method: 'PUT', body: JSON.stringify({ is_active }) });
+
+// Marcar ticket como leído (quitar punto rojo)
+export const markTicketRead = (id) =>
+  request(`/tickets/${id}`, { method: 'PUT', body: JSON.stringify({ is_new: false }) });
+
+// Almacenamiento
+export const getStorage = () => request('/files/storage');
+
 // Archivos
 export const getFiles = (ticket_id) => request(`/files?ticket_id=${ticket_id}`);
 export const deleteFile = (id) => request(`/files/${id}`, { method: 'DELETE' });

@@ -18,6 +18,12 @@ router.post('/login', async (req, res) => {
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Credenciales incorrectas' });
 
+    if (user.role === 'cliente' && user.company_id) {
+      const [comp] = await db.query('SELECT is_active FROM companies WHERE id = ?', [user.company_id]);
+      if (comp[0] && !comp[0].is_active)
+        return res.status(403).json({ error: 'Tu empresa ha sido desactivada. Contacta al administrador.' });
+    }
+
     const token = jwt.sign(
       { id: user.id, role: user.role, company_id: user.company_id },
       process.env.JWT_SECRET,

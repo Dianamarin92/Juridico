@@ -61,6 +61,16 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
+router.put('/:id/active', auth, async (req, res) => {
+  const { is_active } = req.body;
+  try {
+    await db.query('UPDATE companies SET is_active = ? WHERE id = ?', [is_active ? 1 : 0, req.params.id]);
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: 'Error al actualizar estado de empresa' });
+  }
+});
+
 router.delete('/:id', auth, async (req, res) => {
   const { id } = req.params;
   try {

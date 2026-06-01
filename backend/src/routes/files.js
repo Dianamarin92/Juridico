@@ -32,6 +32,21 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
   }
 });
 
+router.get('/storage', auth, async (req, res) => {
+  const TOTAL_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB
+  const uploadsDir = path.join(__dirname, '../../uploads');
+  let usedBytes = 0;
+  if (fs.existsSync(uploadsDir)) {
+    for (const file of fs.readdirSync(uploadsDir)) {
+      try {
+        const stat = fs.statSync(path.join(uploadsDir, file));
+        if (stat.isFile()) usedBytes += stat.size;
+      } catch {}
+    }
+  }
+  res.json({ used: usedBytes, total: TOTAL_BYTES });
+});
+
 router.get('/', auth, async (req, res) => {
   const { ticket_id } = req.query;
   try {

@@ -54,15 +54,16 @@ router.delete('/:id', auth, async (req, res) => {
 });
 
 router.put('/:id', auth, async (req, res) => {
-  const { status, assigned_to } = req.body;
+  const { status, assigned_to, is_new } = req.body;
   const { id } = req.params;
   try {
     const [current] = await db.query('SELECT * FROM tickets WHERE id = ?', [id]);
     if (!current[0]) return res.status(404).json({ error: 'Ticket no encontrado' });
 
-    await db.query('UPDATE tickets SET status = ?, assigned_to = ? WHERE id = ?', [
+    await db.query('UPDATE tickets SET status = ?, assigned_to = ?, is_new = ? WHERE id = ?', [
       status || current[0].status,
       assigned_to !== undefined ? assigned_to : current[0].assigned_to,
+      is_new !== undefined ? (is_new ? 1 : 0) : current[0].is_new,
       id,
     ]);
 

@@ -163,6 +163,13 @@ ALTER TABLE companies
 ALTER TABLE users ADD COLUMN username VARCHAR(50) NOT NULL UNIQUE AFTER id;
 ```
 
+### Columnas añadidas (ALTER pendiente de ejecutar en producción)
+
+```sql
+ALTER TABLE tickets ADD COLUMN is_new TINYINT(1) NOT NULL DEFAULT 1;
+ALTER TABLE companies ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1;
+```
+
 ## Frontend — estructura clave
 
 ```
@@ -175,7 +182,7 @@ frontend/src/
     └── api.js           Capa HTTP → llama a api.marinabogados.funec.org
 ```
 
-## Funcionalidades implementadas (al 2026-05-27)
+## Funcionalidades implementadas (al 2026-06-01)
 
 ### Vista cliente
 - Al iniciar sesión va directo a **Mis Tickets** (no pasa por directorio de empresas)
@@ -190,8 +197,11 @@ frontend/src/
 ### Vista admin (abogadas / Steven Marín)
 - **Directorio de empresas** muestra conteo de tickets por estado (badges de color) en cada fila, usando LEFT JOIN en la consulta SQL
 - **+ Nueva Empresa:** formulario con datos de empresa (nombre, NIT, contacto, teléfono, correo) y acceso del cliente (usuario + contraseña) — crea empresa y usuario cliente en un solo paso
-- **+ Nuevo Usuario:** formulario para crear usuarios administrativos (Abogada Asignada o Abogada Líder) — sin acceso al módulo de Informes
+- **+ Nuevo Usuario:** formulario con campos: Cédula, Correo electrónico (opcional), Contraseña, Rol — crea Abogada Asignada o Abogada Líder sin acceso a Informes
 - **Eliminar empresa:** botón en cada fila del directorio — borra empresa, usuario cliente y todos sus tickets en cascada
+- **Desactivar / Activar empresa:** botón amarillo/verde por fila — cliente desactivado no puede iniciar sesión (verificación en `/auth/login`); empresa aparece atenuada con badge "Desactivada"
+- **Punto rojo en tickets nuevos:** tickets creados por el cliente aparecen con un punto rojo parpadeante y título en negrita en la vista de admin/abogada; el punto desaparece cuando el admin abre el ticket (`is_new = false`)
+- **Mi Perfil (admin):** página con barra de progreso de almacenamiento de documentos (GET `/files/storage` lee el directorio `uploads/`, límite: 5 GB) y formulario para cambiar contraseña
 - Login por `username` (cédula/NIT), no por email
 
 ### Indicadores de carga
@@ -211,6 +221,11 @@ frontend/src/
 
 ## Pendientes
 
+- [ ] **Ejecutar en producción (phpMyAdmin):**
+  ```sql
+  ALTER TABLE tickets ADD COLUMN is_new TINYINT(1) NOT NULL DEFAULT 1;
+  ALTER TABLE companies ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1;
+  ```
 - [ ] Crear carpeta `uploads/` en servidor via SSH: `mkdir -p public_html/api.marinabogados/uploads`
 - [ ] Actualizar multer a 2.x en backend (advertencia de seguridad en multer 1.x)
 - [ ] Si el deploy de FTP falla por timeout, re-ejecutar manualmente desde GitHub Actions → Re-run jobs
