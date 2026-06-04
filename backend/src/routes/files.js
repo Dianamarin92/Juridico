@@ -17,14 +17,15 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }); // 1
 const router = express.Router();
 
 router.post('/upload', auth, upload.single('file'), async (req, res) => {
-  const { ticket_id } = req.body;
+  const { ticket_id, company_id } = req.body;
   if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
+  if (!ticket_id && !company_id) return res.status(400).json({ error: 'ticket_id o company_id requerido' });
 
   try {
     const filePath = `/uploads/${req.file.filename}`;
     await db.query(
-      'INSERT INTO file_uploads (ticket_id, filename, path, uploaded_by) VALUES (?, ?, ?, ?)',
-      [ticket_id, req.file.originalname, filePath, req.user.id]
+      'INSERT INTO file_uploads (ticket_id, company_id, filename, path, uploaded_by) VALUES (?, ?, ?, ?, ?)',
+      [ticket_id || null, company_id || null, req.file.originalname, filePath, req.user.id]
     );
     res.status(201).json({ path: filePath, name: req.file.originalname });
   } catch {
@@ -48,12 +49,20 @@ router.get('/storage', auth, async (req, res) => {
 });
 
 router.get('/', auth, async (req, res) => {
-  const { ticket_id } = req.query;
+  const { ticket_id, company_id } = req.query;
   try {
-    const [rows] = await db.query(
-      'SELECT * FROM file_uploads WHERE ticket_id = ? ORDER BY created_at DESC',
-      [ticket_id]
-    );
+    let rows;
+    if (company_id) {
+      [rows] = await db.query(
+        'SELECT * FROM file_uploads WHERE company_id = ? ORDER BY created_at DESC',
+        [company_id]
+      );
+    } else {
+      [rows] = await db.query(
+        'SELECT * FROM file_uploads WHERE ticket_id = ? ORDER BY created_at DESC',
+        [ticket_id]
+      );
+    }
     res.json(rows);
   } catch {
     res.status(500).json({ error: 'Error al obtener archivos' });

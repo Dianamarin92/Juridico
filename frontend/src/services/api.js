@@ -65,13 +65,27 @@ export const markTicketRead = (id) =>
 // Almacenamiento
 export const getStorage = () => request('/files/storage');
 
-// Archivos
+// Archivos de tickets
 export const getFiles = (ticket_id) => request(`/files?ticket_id=${ticket_id}`);
 export const deleteFile = (id) => request(`/files/${id}`, { method: 'DELETE' });
 export const uploadFile = (ticket_id, file) => {
   const form = new FormData();
   form.append('file', file);
   form.append('ticket_id', ticket_id);
+  const token = localStorage.getItem('token');
+  return fetch(`${BASE}/files/upload`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  }).then((r) => r.json());
+};
+
+// Archivos de empresa
+export const getCompanyFiles = (company_id) => request(`/files?company_id=${company_id}`);
+export const uploadCompanyFile = (company_id, file) => {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('company_id', company_id);
   const token = localStorage.getItem('token');
   return fetch(`${BASE}/files/upload`, {
     method: 'POST',

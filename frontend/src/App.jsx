@@ -56,6 +56,10 @@ export default function App() {
   const [editCompany, setEditCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '' });
   const [editPassword, setEditPassword] = useState('');
 
+  const [profileCompany, setProfileCompany] = useState(null);
+  const [companyFiles, setCompanyFiles] = useState([]);
+  const [companyFilesLoading, setCompanyFilesLoading] = useState(false);
+
   const chatEndRef = useRef(null);
 
   const isLoggedIn = !!user;
@@ -285,6 +289,36 @@ export default function App() {
     }
   };
 
+  const openCompanyProfile = async (company) => {
+    setProfileCompany(company);
+    setCompanyFilesLoading(true);
+    try {
+      setCompanyFiles(await api.getCompanyFiles(company.id));
+    } catch { setCompanyFiles([]); }
+    finally { setCompanyFilesLoading(false); }
+  };
+
+  const handleUploadCompanyFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !profileCompany) return;
+    setBusy(true);
+    try {
+      await api.uploadCompanyFile(profileCompany.id, file);
+      setCompanyFiles(await api.getCompanyFiles(profileCompany.id));
+    } catch (err) { setError(err.message); }
+    finally { setBusy(false); e.target.value = ''; }
+  };
+
+  const handleDeleteCompanyFile = async (fileId) => {
+    if (!window.confirm('¿Eliminar este archivo?')) return;
+    setBusy(true);
+    try {
+      await api.deleteFile(fileId);
+      setCompanyFiles(prev => prev.filter(f => f.id !== fileId));
+    } catch (err) { setError(err.message); }
+    finally { setBusy(false); }
+  };
+
   const handleToggleCompany = async (company) => {
     setBusy(true);
     try {
@@ -433,6 +467,9 @@ export default function App() {
           <>
             <div className={`nav-link ${currentView === 'dashboard' ? 'active' : ''}`} onClick={() => setCurrentView('dashboard')}>
               Directorio de Empresas
+            </div>
+            <div className={`nav-link ${currentView === 'companyProfiles' ? 'active' : ''}`} onClick={() => { setProfileCompany(null); setCurrentView('companyProfiles'); }}>
+              Perfil Empresa
             </div>
             <div className={`nav-link ${currentView === 'adminProfile' ? 'active' : ''}`} onClick={() => { setAdminPassword(''); setCurrentView('adminProfile'); }}>
               Mi Perfil
@@ -689,6 +726,130 @@ export default function App() {
                   </div>
                 </form>
               </div>
+            </div>
+          )}
+
+          {/* PERFIL EMPRESA */}
+          {currentView === 'companyProfiles' && !isCliente && (
+            <div>
+              {!profileCompany ? (
+                <>
+                  <div className="view-header" style={{ marginBottom: '1.5rem' }}>
+                    <div>
+                      <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Perfil de Empresas</h1>
+                      <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Selecciona una empresa para ver sus datos y documentos.</p>
+                    </div>
+                  </div>
+                  {companies.length === 0 ? (
+                    <p style={{ color: 'var(--text-muted)' }}>No hay empresas registradas.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      {companies.map(c => (
+                        <div
+                          key={c.id}
+                          onClick={() => openCompanyProfile(c)}
+                          style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '0.75rem', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', transition: 'box-shadow 0.2s', opacity: c.is_active ? 1 : 0.6 }}
+                          onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'}
+                          onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
+                        >
+                          <div>
+                            <div style={{ fontWeight: '600', color: 'var(--primary-color)' }}>{c.name}</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                              {c.nit && `NIT: ${c.nit}`}{c.nit && c.contact_name && ' · '}{c.contact_name}
+                            </div>
+                          </div>
+                          <span style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>›</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <button className="btn-secondary" onClick={() => setProfileCompany(null)} style={{ marginBottom: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                      ← Volver a Empresas
+                    </button>
+                    <h1 style={{ margin: 0, fontSize: '1.5rem' }}>{profileCompany.name}</h1>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                    {/* Datos de la empresa */}
+                    <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                      <h3 style={{ marginTop: 0, color: 'var(--primary-color)', fontSize: '1rem' }}>Datos de la Empresa</h3>
+                      {[
+                        { label: 'Nombre',    value: profileCompany.name },
+                        { label: 'NIT',       value: profileCompany.nit },
+                        { label: 'Contacto',  value: profileCompany.contact_name },
+                        { label: 'Teléfono',  value: profileCompany.phone },
+                        { label: 'Correo',    value: profileCompany.email },
+                      ].map(({ label, value }) => value ? (
+                        <div key={label} style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+                          <span style={{ fontWeight: '600', color: 'var(--text-muted)', minWidth: '80px', display: 'inline-block' }}>{label}:</span>
+                          <span style={{ color: 'var(--primary-color)', marginLeft: '0.5rem' }}>{value}</span>
+                        </div>
+                      ) : null)}
+                    </div>
+
+                    {/* Estadísticas de tickets */}
+                    <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                      <h3 style={{ marginTop: 0, color: 'var(--primary-color)', fontSize: '1rem' }}>Tickets</h3>
+                      {[
+                        { key: 'pending',  label: 'Pendientes',  cls: 'status-pending' },
+                        { key: 'progress', label: 'En Proceso',  cls: 'status-progress' },
+                        { key: 'review',   label: 'En Revisión', cls: 'status-review' },
+                        { key: 'done',     label: 'Enviados',    cls: 'status-done' },
+                      ].map(({ key, label, cls }) => (
+                        <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <span className={`count-badge ${cls}`}>{label}</span>
+                          <strong style={{ color: 'var(--primary-color)' }}>{profileCompany[`${key}_count`] || 0}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Documentos de la empresa */}
+                  <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                      <h3 style={{ margin: 0, color: 'var(--primary-color)', fontSize: '1rem' }}>Documentos de la Empresa</h3>
+                      <label className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                        📎 Subir Archivo
+                        <input type="file" hidden onChange={handleUploadCompanyFile} />
+                      </label>
+                    </div>
+                    {companyFilesLoading ? (
+                      <div className="spinner-wrapper"><div className="spinner" /><span>Cargando documentos...</span></div>
+                    ) : companyFiles.length === 0 ? (
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No hay documentos subidos aún. Puedes subir archivos como el manual de convivencia, contratos, etc.</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {companyFiles.map(f => (
+                          <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: 'var(--bg-color)', borderRadius: '0.5rem', fontSize: '0.875rem' }}>
+                            <span style={{ flex: 1 }}>📄 {f.filename}</span>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{new Date(f.created_at).toLocaleDateString('es-CO')}</span>
+                            <a
+                              href={`${import.meta.env.VITE_API_URL}${f.path}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn-secondary"
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', textDecoration: 'none' }}
+                            >
+                              ⬇ Descargar
+                            </a>
+                            <button
+                              className="btn-danger"
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                              onClick={() => handleDeleteCompanyFile(f.id)}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -1035,7 +1196,12 @@ export default function App() {
                   <input
                     type="text"
                     value={newCompany[field]}
-                    onChange={e => setNewCompany(prev => ({ ...prev, [field]: e.target.value }))}
+                    onChange={e => setNewCompany(prev => {
+                      const updated = { ...prev, [field]: e.target.value };
+                      if (field === 'nit' && (prev.username === '' || prev.username === prev.nit))
+                        updated.username = e.target.value;
+                      return updated;
+                    })}
                     placeholder={placeholder}
                     required={required}
                     style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
