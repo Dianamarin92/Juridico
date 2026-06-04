@@ -6,8 +6,8 @@ Monorepo con frontend y backend separados, desplegados de forma independiente vi
 
 ```
 juridico/
-├── frontend/          React 19 + Vite  →  FTP a public_html/marinabogados/
-├── backend/           Node.js + Express →  FTP a public_html/api.marinabogados/
+├── frontend/          React 19 + Vite  →  FTP a public_html/
+├── backend/           Node.js + Express →  FTP a public_html/api.marinyabogados.com.co/
 └── .github/workflows/ deploy-frontend.yml / deploy-backend.yml
 ```
 
@@ -20,19 +20,19 @@ juridico/
 
 | Servicio | URL |
 |----------|-----|
-| Frontend (landing + app) | `https://marinabogados.funec.org` |
-| Backend API | `https://api.marinabogados.funec.org` |
-| Health check | `https://api.marinabogados.funec.org/health` |
+| Frontend (landing + app) | `https://marinyabogados.com.co` |
+| Backend API | `https://api.marinyabogados.com.co` |
+| Health check | `https://api.marinyabogados.com.co/health` |
 
 ## Hosting
 
-- **Proveedor:** funec.org (hosting compartido cPanel)
-- **Usuario cPanel:** `funecor`
-- **Node.js:** v22.22.2 via Passenger (cPanel → Setup Node.js App)
-- **Frontend en servidor:** `/home2/funecor/public_html/marinabogados/`
-- **Backend en servidor:** `/home2/funecor/public_html/api.marinabogados/`
-- **Base de datos:** `funecor_marin_abogados` (MySQL, usuario: `funecor_marin`)
-- **FTP:** `ftp.funec.org` puerto 21 (protocolo FTPS explícito)
+- **Proveedor:** marinyabogados.com.co (hosting compartido cPanel)
+- **Usuario cPanel:** `marinyab`
+- **Node.js:** configurar en cPanel → Setup Node.js App (ver sección abajo)
+- **Frontend en servidor:** `/home/marinyab/public_html/marinyabogados/`
+- **Backend en servidor:** `/home/marinyab/public_html/api.marinyabogados.com.co/`
+- **Base de datos:** `marinyab_juridico` (MySQL, usuario: `marinyab_marin`)
+- **FTP:** `192.99.84.46` puerto 21 (protocolo FTPS explícito)
 
 ## Correr localmente
 
@@ -53,16 +53,16 @@ pnpm dev        # corre en http://localhost:3001
 
 ## Variables de entorno del backend (.env en servidor)
 
-Archivo en `/home2/funecor/public_html/api.marinabogados/.env` — nunca en git.
+Archivo en `/home/marinyab/public_html/api.marinyabogados.com.co/.env` — nunca en git.
 
 ```
 DB_HOST=localhost
-DB_USER=funecor_marin
-DB_PASS=<contraseña>
-DB_NAME=funecor_marin_abogados
+DB_USER=marinyab_marin
+DB_PASS=<contraseña BD>
+DB_NAME=marinyab_juridico
 JWT_SECRET=<clave larga y aleatoria>
 PORT=3001
-FRONTEND_URL=https://marinabogados.funec.org
+FRONTEND_URL=https://marinyabogados.com.co
 ```
 
 ## Secrets de GitHub Actions
@@ -72,12 +72,12 @@ Configurar en GitHub → Settings → Secrets and variables → Actions:
 
 | Secret | Valor |
 |--------|-------|
-| `FTP_HOST` | `ftp.funec.org` |
-| `FTP_USER` | `funecor` |
+| `FTP_HOST` | `192.99.84.46` |
+| `FTP_USER` | `marinyab` |
 | `FTP_PASS` | contraseña FTP |
-| `FTP_FRONTEND_DIR` | `public_html/marinabogados/` |
-| `FTP_BACKEND_DIR` | `public_html/api.marinabogados/` |
-| `VITE_API_URL` | `https://api.marinabogados.funec.org` |
+| `FTP_FRONTEND_DIR` | `public_html/marinyabogados/` |
+| `FTP_BACKEND_DIR` | `public_html/api.marinyabogados.com.co/` |
+| `VITE_API_URL` | `https://api.marinyabogados.com.co` |
 
 > SSH no está configurado en CI — el restart y tareas de servidor se hacen manualmente.
 
@@ -95,7 +95,7 @@ El workflow de GitHub Actions ya hace `touch tmp/restart.txt` automáticamente a
 **Excepción — solo si hubo cambios en `backend/package.json`**, entrar por SSH y correr:
 
 ```bash
-cd public_html/api.marinabogados
+cd public_html/api.marinyabogados.com.co
 npm install --prod
 ```
 
@@ -104,15 +104,15 @@ npm install --prod
 
 ## Configuración Node.js en cPanel
 
-- **Node.js version:** 22.22.2
+- **Node.js version:** la más alta disponible (preferir 20.x o 22.x)
 - **Application mode:** Production
-- **Application root:** `public_html/api.marinabogados`
-- **Application URL:** `api.marinabogados.funec.org`
+- **Application root:** `public_html/api.marinyabogados.com.co`
+- **Application URL:** `api.marinyabogados.com.co`
 - **Application startup file:** `app.js`
 
 ## Rutas de la API
 
-Todas las rutas son relativas a `https://api.marinabogados.funec.org`:
+Todas las rutas son relativas a `https://api.marinyabogados.com.co`:
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
@@ -179,7 +179,7 @@ frontend/src/
 ├── landing.css          Estilos landing (paleta: #1a1a1a, #c0392b, #fff)
 ├── index.css            Estilos sistema de tickets
 └── services/
-    └── api.js           Capa HTTP → llama a api.marinabogados.funec.org
+    └── api.js           Capa HTTP → llama a api.marinyabogados.com.co
 ```
 
 ## Funcionalidades implementadas (al 2026-06-01)
@@ -217,11 +217,26 @@ frontend/src/
 ## Usuario admin
 
 - **Username:** `admin` | **Password:** `1111` | **Rol:** `steven_marin`
-- Ya insertado en producción en `funecor_marin_abogados.users`
+- Insertar en producción después de importar `backend/database.sql` (ver sección Pendientes)
 
-## Pendientes
+## Pendientes — migración a nuevo hosting (marinyabogados.com.co)
 
-- [ ] Crear carpeta `uploads/` en servidor via SSH: `mkdir -p public_html/api.marinabogados/uploads`
+### Completado (2026-06-02)
+- [x] **cPanel → Dominios:** dominio principal `marinyabogados.com.co` → `public_html/`
+- [x] **cPanel → Dominios:** subdominio `api.marinyabogados.com.co` → `public_html/api.marinyabogados.com.co/`
+- [x] **cPanel → MySQL Databases:** BD `marinyab_juridico` creada, usuario `marinyab_marin` creado con ALL PRIVILEGES
+- [x] **vite.config.js:** `base` cambiado a `/marinyabogados/` (frontend vive en `public_html/marinyabogados/`)
+
+### Pendiente
+- [ ] **phpMyAdmin:** resolver acceso (error "Access denied for user marinyab" — entrar con usuario `marinyab_marin`)
+- [ ] **phpMyAdmin:** importar `backend/database.sql` en la BD `marinyab_juridico`
+- [ ] **phpMyAdmin:** ejecutar los ALTER TABLE del historial (companies, users, tickets — ver sección Base de datos)
+- [ ] **phpMyAdmin:** insertar usuario admin: `INSERT INTO users (username, password_hash, role) VALUES ('admin', '<hash bcrypt de 1111>', 'steven_marin');`
+- [ ] **cPanel → Setup Node.js App:** configurar app con los valores de la sección "Configuración Node.js en cPanel"
+- [ ] **Crear .env en servidor:** crear manualmente en `public_html/api.marinyabogados.com.co/.env` (ver sección Variables de entorno)
+- [ ] **Crear carpeta uploads/:** en File Manager → `public_html/api.marinyabogados.com.co/uploads/`
+- [ ] **GitHub → Secrets:** actualizar los 6 secrets (FTP_HOST, FTP_USER, FTP_PASS, FTP_FRONTEND_DIR, FTP_BACKEND_DIR, VITE_API_URL)
+- [ ] **Primer deploy:** lanzar manualmente ambos workflows desde GitHub Actions → Run workflow
 - [ ] Actualizar multer a 2.x en backend (advertencia de seguridad en multer 1.x)
 - [ ] Si el deploy de FTP falla por timeout, re-ejecutar manualmente desde GitHub Actions → Re-run jobs
 
