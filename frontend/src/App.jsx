@@ -370,7 +370,7 @@ export default function App() {
       <div className="login-wrapper">
         {busy && <div className="loading-bar" />}
         <div className="login-card">
-          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Marin & Abogados" style={{ maxHeight: '120px', marginBottom: '1rem', objectFit: 'contain' }} />
+          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Marin & Abogados" style={{ maxHeight: '160px', marginBottom: '1.5rem', objectFit: 'contain' }} />
           <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>Portal de Gestión Jurídica</p>
           <button onClick={() => setShowLanding(true)} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.8rem', margin: '0.5rem 0', fontFamily: 'inherit' }}>
             ← Volver al sitio web
@@ -426,7 +426,7 @@ export default function App() {
       {/* SIDEBAR */}
       <aside className="sidebar">
         <div className="sidebar-title">
-          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Marin & Abogados" style={{ maxHeight: '55px', objectFit: 'contain' }} />
+          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Marin & Abogados" style={{ maxHeight: '80px', width: '100%', objectFit: 'contain', display: 'block', margin: '0 auto' }} />
         </div>
 
         {!isCliente ? (

@@ -24,7 +24,6 @@ export default function LandingPage({ onLogin }) {
         <div className="land-nav-inner">
           <div className="land-logo">
             <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Marín & Abogados" />
-            <span>MARÍN <em>&amp;</em> ABOGADOS</span>
           </div>
           <button className="land-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menú">
             <span /><span /><span />
