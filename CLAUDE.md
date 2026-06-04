@@ -28,7 +28,7 @@ juridico/
 
 - **Proveedor:** marinyabogados.com.co (hosting compartido cPanel)
 - **Usuario cPanel:** `marinyab`
-- **Node.js:** configurar en cPanel → Setup Node.js App (ver sección abajo)
+- **Node.js:** v20.20.2 via Passenger (cPanel → Setup Node.js App)
 - **Frontend en servidor:** `/home/marinyab/public_html/marinyabogados/`
 - **Backend en servidor:** `/home/marinyab/public_html/api.marinyabogados.com.co/`
 - **Base de datos:** `marinyab_juridico` (MySQL, usuario: `marinyab_marin`)
@@ -163,6 +163,15 @@ ALTER TABLE companies
 ALTER TABLE users ADD COLUMN username VARCHAR(50) NOT NULL UNIQUE AFTER id;
 ```
 
+### Columna `company_id` en `file_uploads` (ALTER ejecutado en producción — 2026-06-04)
+
+```sql
+ALTER TABLE file_uploads 
+  MODIFY COLUMN ticket_id INT NULL,
+  ADD COLUMN company_id INT NULL AFTER ticket_id,
+  ADD FOREIGN KEY fk_company_file (company_id) REFERENCES companies(id) ON DELETE CASCADE;
+```
+
 ### Columnas `is_new` y `is_active` (ALTER ejecutado en producción — 2026-06-01)
 
 ```sql
@@ -182,7 +191,7 @@ frontend/src/
     └── api.js           Capa HTTP → llama a api.marinyabogados.com.co
 ```
 
-## Funcionalidades implementadas (al 2026-06-01)
+## Funcionalidades implementadas (al 2026-06-04)
 
 ### Vista cliente
 - Al iniciar sesión va directo a **Mis Tickets** (no pasa por directorio de empresas)
@@ -202,6 +211,8 @@ frontend/src/
 - **Desactivar / Activar empresa:** botón amarillo/verde por fila — cliente desactivado no puede iniciar sesión (verificación en `/auth/login`); empresa aparece atenuada con badge "Desactivada"
 - **Punto rojo en tickets nuevos:** tickets creados por el cliente aparecen con un punto rojo parpadeante y título en negrita en la vista de admin/abogada; el punto desaparece cuando el admin abre el ticket (`is_new = false`)
 - **Mi Perfil (admin):** página con barra de progreso de almacenamiento de documentos (GET `/files/storage` lee el directorio `uploads/`, límite: 5 GB) y formulario para cambiar contraseña
+- **Perfil Empresa:** sección en sidebar admin que lista todas las empresas; al entrar a una muestra datos, conteo de tickets por estado, y panel de documentos propios de la empresa (subir/descargar/eliminar archivos como manuales, contratos, etc.)
+- **Auto-NIT en nueva empresa:** al escribir el NIT en el formulario de creación, el campo Usuario se sincroniza automáticamente
 - Login por `username` (cédula/NIT), no por email
 
 ### Indicadores de carga
@@ -217,7 +228,7 @@ frontend/src/
 ## Usuario admin
 
 - **Username:** `admin` | **Password:** `1111` | **Rol:** `steven_marin`
-- Insertar en producción después de importar `backend/database.sql` (ver sección Pendientes)
+- Ya insertado en producción en `marinyab_juridico.users`
 
 ## Pendientes — migración a nuevo hosting (marinyabogados.com.co)
 
@@ -227,18 +238,25 @@ frontend/src/
 - [x] **cPanel → MySQL Databases:** BD `marinyab_juridico` creada, usuario `marinyab_marin` creado con ALL PRIVILEGES
 - [x] **vite.config.js:** `base` cambiado a `/marinyabogados/` (frontend vive en `public_html/marinyabogados/`)
 
+### Completado (2026-06-04)
+- [x] **phpMyAdmin:** acceso resuelto con usuario `marinyab_marin`
+- [x] **phpMyAdmin:** `backend/database.sql` importado en `marinyab_juridico`
+- [x] **phpMyAdmin:** ALTER TABLEs ejecutados (companies, users, tickets)
+- [x] **phpMyAdmin:** usuario admin insertado con hash bcrypt correcto
+- [x] **cPanel → Setup Node.js App:** Node.js 20.20.2, app root y startup file configurados
+- [x] **Crear .env en servidor:** creado con credenciales correctas
+- [x] **Crear carpeta uploads/:** creada en `public_html/api.marinyabogados.com.co/uploads/`
+- [x] **GitHub → Secrets:** 6 secrets actualizados (FTP host cambiado a `ftp.marinyabogados.com.co`)
+- [x] **Deploy backend y frontend:** ambos workflows funcionando
+- [x] **Sistema funcionando:** login con admin/1111 exitoso en producción
+
+### Notas de configuración importantes
+- **NODE_PATH:** configurado como variable de entorno en Setup Node.js App → `/home/marinyab/public_html/api.marinyabogados.com.co/node_modules`
+- **npm install en servidor:** correr manualmente si hay cambios en `package.json`: `source /home/marinyab/nodevenv/public_html/api.marinyabogados.com.co/20/bin/activate && cd /home/marinyab/public_html/api.marinyabogados.com.co && npm install --prod`
+- **Firewall Dongee:** fue necesario desactivarlo para permitir conexiones FTP desde GitHub Actions
+
 ### Pendiente
-- [ ] **phpMyAdmin:** resolver acceso (error "Access denied for user marinyab" — entrar con usuario `marinyab_marin`)
-- [ ] **phpMyAdmin:** importar `backend/database.sql` en la BD `marinyab_juridico`
-- [ ] **phpMyAdmin:** ejecutar los ALTER TABLE del historial (companies, users, tickets — ver sección Base de datos)
-- [ ] **phpMyAdmin:** insertar usuario admin: `INSERT INTO users (username, password_hash, role) VALUES ('admin', '<hash bcrypt de 1111>', 'steven_marin');`
-- [ ] **cPanel → Setup Node.js App:** configurar app con los valores de la sección "Configuración Node.js en cPanel"
-- [ ] **Crear .env en servidor:** crear manualmente en `public_html/api.marinyabogados.com.co/.env` (ver sección Variables de entorno)
-- [ ] **Crear carpeta uploads/:** en File Manager → `public_html/api.marinyabogados.com.co/uploads/`
-- [ ] **GitHub → Secrets:** actualizar los 6 secrets (FTP_HOST, FTP_USER, FTP_PASS, FTP_FRONTEND_DIR, FTP_BACKEND_DIR, VITE_API_URL)
-- [ ] **Primer deploy:** lanzar manualmente ambos workflows desde GitHub Actions → Run workflow
 - [ ] Actualizar multer a 2.x en backend (advertencia de seguridad en multer 1.x)
-- [ ] Si el deploy de FTP falla por timeout, re-ejecutar manualmente desde GitHub Actions → Re-run jobs
 
 ## Historial del proyecto
 
