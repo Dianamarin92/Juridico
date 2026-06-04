@@ -132,7 +132,7 @@
   min-height: 100vh;
   display: flex;
   align-items: center;
-  background: var(--land-dark) url('/logo.jpg') center/cover no-repeat;
+  background: var(--land-dark) url('/marinyabogados/logo.jpg') center/cover no-repeat;
   background-blend-mode: overlay;
 }
 .land-hero-overlay {

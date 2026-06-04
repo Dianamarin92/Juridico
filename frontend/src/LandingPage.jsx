@@ -23,7 +23,7 @@ export default function LandingPage({ onLogin }) {
       <nav className={`land-nav ${scrolled ? 'scrolled' : ''}`}>
         <div className="land-nav-inner">
           <div className="land-logo">
-            <img src="/logo.jpg" alt="Marín & Abogados" />
+            <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Marín & Abogados" />
             <span>MARÍN <em>&amp;</em> ABOGADOS</span>
           </div>
           <button className="land-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menú">
@@ -306,7 +306,7 @@ export default function LandingPage({ onLogin }) {
       <footer className="land-footer">
         <div className="land-container land-footer-inner">
           <div className="land-footer-brand">
-            <img src="/logo.jpg" alt="Marín & Abogados" />
+            <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Marín & Abogados" />
             <div>
               <strong>MARÍN &amp; ABOGADOS</strong>
               <span>Asociados</span>
