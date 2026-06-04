@@ -58,6 +58,8 @@ export default function App() {
 
   const [profileCompany, setProfileCompany] = useState(null);
   const [companyFiles, setCompanyFiles] = useState([]);
+  const [editingProfileCompany, setEditingProfileCompany] = useState(false);
+  const [profileCompanyEdit, setProfileCompanyEdit] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '' });
   const [companyFilesLoading, setCompanyFilesLoading] = useState(false);
 
   const chatEndRef = useRef(null);
@@ -287,6 +289,19 @@ export default function App() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const handleSaveProfileCompany = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await api.updateCompany(profileCompany.id, profileCompanyEdit);
+      const updated = { ...profileCompany, ...profileCompanyEdit };
+      setProfileCompany(updated);
+      setCompanies(prev => prev.map(c => c.id === updated.id ? { ...c, ...profileCompanyEdit } : c));
+      setEditingProfileCompany(false);
+    } catch (err) { setError(err.message); }
+    finally { setBusy(false); }
   };
 
   const openCompanyProfile = async (company) => {
@@ -776,19 +791,56 @@ export default function App() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                     {/* Datos de la empresa */}
                     <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
-                      <h3 style={{ marginTop: 0, color: 'var(--primary-color)', fontSize: '1rem' }}>Datos de la Empresa</h3>
-                      {[
-                        { label: 'Nombre',    value: profileCompany.name },
-                        { label: 'NIT',       value: profileCompany.nit },
-                        { label: 'Contacto',  value: profileCompany.contact_name },
-                        { label: 'Teléfono',  value: profileCompany.phone },
-                        { label: 'Correo',    value: profileCompany.email },
-                      ].map(({ label, value }) => value ? (
-                        <div key={label} style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
-                          <span style={{ fontWeight: '600', color: 'var(--text-muted)', minWidth: '80px', display: 'inline-block' }}>{label}:</span>
-                          <span style={{ color: 'var(--primary-color)', marginLeft: '0.5rem' }}>{value}</span>
-                        </div>
-                      ) : null)}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3 style={{ margin: 0, color: 'var(--primary-color)', fontSize: '1rem' }}>Datos de la Empresa</h3>
+                        {!editingProfileCompany && (
+                          <button className="btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.8rem' }}
+                            onClick={() => { setProfileCompanyEdit({ name: profileCompany.name || '', nit: profileCompany.nit || '', contact_name: profileCompany.contact_name || '', phone: profileCompany.phone || '', email: profileCompany.email || '' }); setEditingProfileCompany(true); }}>
+                            ✏ Editar
+                          </button>
+                        )}
+                      </div>
+                      {editingProfileCompany ? (
+                        <form onSubmit={handleSaveProfileCompany} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {[
+                            { field: 'name',         label: 'Nombre',   required: true },
+                            { field: 'nit',          label: 'NIT' },
+                            { field: 'contact_name', label: 'Contacto' },
+                            { field: 'phone',        label: 'Teléfono' },
+                            { field: 'email',        label: 'Correo' },
+                          ].map(({ field, label, required }) => (
+                            <div key={field}>
+                              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{label}</label>
+                              <input
+                                type="text"
+                                value={profileCompanyEdit[field]}
+                                onChange={e => setProfileCompanyEdit(prev => ({ ...prev, [field]: e.target.value }))}
+                                required={required}
+                                style={{ width: '100%', padding: '0.5rem 0.65rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.875rem', boxSizing: 'border-box' }}
+                              />
+                            </div>
+                          ))}
+                          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                            <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={busy}>{busy ? 'Guardando...' : 'Guardar'}</button>
+                            <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setEditingProfileCompany(false)}>Cancelar</button>
+                          </div>
+                        </form>
+                      ) : (
+                        <>
+                          {[
+                            { label: 'Nombre',   value: profileCompany.name },
+                            { label: 'NIT',      value: profileCompany.nit },
+                            { label: 'Contacto', value: profileCompany.contact_name },
+                            { label: 'Teléfono', value: profileCompany.phone },
+                            { label: 'Correo',   value: profileCompany.email },
+                          ].map(({ label, value }) => (
+                            <div key={label} style={{ marginBottom: '0.6rem', fontSize: '0.9rem' }}>
+                              <span style={{ fontWeight: '600', color: 'var(--text-muted)', minWidth: '80px', display: 'inline-block' }}>{label}:</span>
+                              <span style={{ color: value ? 'var(--primary-color)' : 'var(--text-muted)', marginLeft: '0.5rem' }}>{value || '—'}</span>
+                            </div>
+                          ))}
+                        </>
+                      )}
                     </div>
 
                     {/* Estadísticas de tickets */}
