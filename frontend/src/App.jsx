@@ -557,7 +557,7 @@ export default function App() {
                 {selectedCompany.name}
               </span>
             )}
-            <span className="role-badge">{ROLE_LABELS[role] || role}</span>
+            <span className="role-badge">{user.name || user.username}</span>
             <button className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem', marginLeft: '0.5rem' }} onClick={handleLogout}>
               Cerrar Sesión
             </button>
