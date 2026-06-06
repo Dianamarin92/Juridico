@@ -185,6 +185,12 @@ ALTER TABLE companies ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1;
 ALTER TABLE users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1;
 ```
 
+### Columna `name` en `users` (ALTER ejecutado en producción — 2026-06-06)
+
+```sql
+ALTER TABLE users ADD COLUMN name VARCHAR(100) DEFAULT NULL AFTER username;
+```
+
 ## Frontend — estructura clave
 
 ```

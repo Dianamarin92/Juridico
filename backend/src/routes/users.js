@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/', auth, async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT id, username, email, role, is_active FROM users WHERE role != 'cliente' ORDER BY role"
+      "SELECT id, username, name, email, role, is_active FROM users WHERE role != 'cliente' ORDER BY role"
     );
     res.json(rows);
   } catch {
@@ -17,7 +17,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 router.post('/', auth, async (req, res) => {
-  const { username, email, password, role } = req.body;
+  const { username, name, email, password, role } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
   const validRoles = ['abogada_asignada', 'abogada_lider'];
   if (req.user.role === 'steven_marin') validRoles.push('steven_marin');
@@ -25,8 +25,8 @@ router.post('/', auth, async (req, res) => {
   try {
     const hash = await bcrypt.hash(password, 10);
     await db.query(
-      'INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)',
-      [username, email || null, hash, role]
+      'INSERT INTO users (username, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)',
+      [username, name || null, email || null, hash, role]
     );
     res.status(201).json({ ok: true });
   } catch (err) {
@@ -52,13 +52,14 @@ router.put('/me/password', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   if (req.user.role !== 'steven_marin') return res.status(403).json({ error: 'Sin permisos' });
   const { id } = req.params;
-  const { email, role, password } = req.body;
+  const { name, email, role, password } = req.body;
   try {
     const validRoles = ['abogada_asignada', 'abogada_lider', 'steven_marin'];
     if (role && !validRoles.includes(role)) return res.status(400).json({ error: 'Rol no válido' });
 
     const updates = [];
     const values = [];
+    if (name !== undefined) { updates.push('name = ?'); values.push(name || null); }
     if (email !== undefined) { updates.push('email = ?'); values.push(email || null); }
     if (role) { updates.push('role = ?'); values.push(role); }
     if (password) {

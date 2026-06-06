@@ -49,7 +49,7 @@ export default function App() {
   const [newCompany, setNewCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '', username: '', password: '' });
 
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
-  const [newUser, setNewUser] = useState({ username: '', email: '', password: '', role: 'abogada_asignada' });
+  const [newUser, setNewUser] = useState({ username: '', name: '', email: '', password: '', role: 'abogada_asignada' });
   const [storageInfo, setStorageInfo] = useState({ used: 0, total: 5 * 1024 * 1024 * 1024 });
   const [adminPassword, setAdminPassword] = useState('');
 
@@ -57,7 +57,7 @@ export default function App() {
   const [editPassword, setEditPassword] = useState('');
 
   const [editingUser, setEditingUser] = useState(null);
-  const [editUserForm, setEditUserForm] = useState({ email: '', role: '', password: '' });
+  const [editUserForm, setEditUserForm] = useState({ name: '', email: '', role: '', password: '' });
 
   const [profileCompany, setProfileCompany] = useState(null);
   const [companyFiles, setCompanyFiles] = useState([]);
@@ -285,7 +285,7 @@ export default function App() {
     try {
       await api.createUser(newUser);
       setIsCreateUserOpen(false);
-      setNewUser({ username: '', email: '', password: '', role: 'abogada_asignada' });
+      setNewUser({ username: '', name: '', email: '', password: '', role: 'abogada_asignada' });
       setLawyers(await api.getUsers());
     } catch (err) {
       setError(err.message);
@@ -354,6 +354,7 @@ export default function App() {
     setBusy(true);
     try {
       const payload = {};
+      if (editUserForm.name !== undefined) payload.name = editUserForm.name;
       if (editUserForm.email !== undefined) payload.email = editUserForm.email;
       if (editUserForm.role) payload.role = editUserForm.role;
       if (editUserForm.password) payload.password = editUserForm.password;
@@ -662,7 +663,8 @@ export default function App() {
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>Usuario (Cédula)</th>
+                      <th>Nombre</th>
+                      <th>Cédula</th>
                       <th>Correo</th>
                       <th>Rol</th>
                       <th style={{ textAlign: 'center' }}>Estado</th>
@@ -677,7 +679,8 @@ export default function App() {
                       const active = u.is_active !== 0;
                       return (
                         <tr key={u.id} style={{ opacity: active ? 1 : 0.55 }}>
-                          <td style={{ fontWeight: '600' }}>{u.username}</td>
+                          <td style={{ fontWeight: '600' }}>{u.name || '—'}</td>
+                          <td style={{ color: 'var(--text-muted)' }}>{u.username}</td>
                           <td style={{ color: 'var(--text-muted)' }}>{u.email || '—'}</td>
                           <td><span className="role-badge">{ROLE_LABELS[u.role] || u.role}</span></td>
                           <td style={{ textAlign: 'center' }}>
@@ -689,7 +692,7 @@ export default function App() {
                             <button
                               className="btn-secondary"
                               style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                              onClick={() => { setEditingUser(u); setEditUserForm({ email: u.email || '', role: u.role, password: '' }); }}
+                              onClick={() => { setEditingUser(u); setEditUserForm({ name: u.name || '', email: u.email || '', role: u.role, password: '' }); }}
                             >Editar</button>
                             {u.id !== user.id && (
                               <button
@@ -1265,7 +1268,20 @@ export default function App() {
             <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
-                  Usuario (Cédula) <span style={{ color: '#dc2626' }}>*</span>
+                  Nombre completo <span style={{ color: '#dc2626' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newUser.name}
+                  onChange={e => setNewUser(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Ej. María López Gómez"
+                  required
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                  Cédula <span style={{ color: '#dc2626' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -1390,6 +1406,16 @@ export default function App() {
             <h2 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Editar Usuario</h2>
             <p style={{ margin: '0 0 1.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Cédula: <strong>{editingUser.username}</strong></p>
             <form onSubmit={handleSaveUser} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>Nombre completo</label>
+                <input
+                  type="text"
+                  value={editUserForm.name}
+                  onChange={e => setEditUserForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Ej. María López Gómez"
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
+                />
+              </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>Correo electrónico</label>
                 <input
