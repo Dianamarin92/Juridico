@@ -125,7 +125,7 @@ export default function App() {
     setCompanies([]); setTickets([]); setMessages([]); setFiles([]);
     setSelectedCompany(null); setSelectedTicket(null);
     setCurrentView('dashboard');
-    setShowLanding(true);
+    setShowLanding(false);
   };
 
   const openCompany = async (company) => {
