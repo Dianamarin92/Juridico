@@ -600,7 +600,7 @@ export default function App() {
                       {companies.length === 0 && (
                         <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No hay empresas registradas.</td></tr>
                       )}
-                      {companies.map(company => {
+                      {companies.filter(c => role === 'steven_marin' || c.is_active !== 0).map(company => {
                         const active = company.is_active !== 0;
                         return (
                         <tr key={company.id} style={{ background: active ? '' : '#fef2f2', opacity: active ? 1 : 0.85 }}>
@@ -852,7 +852,7 @@ export default function App() {
                     <p style={{ color: 'var(--text-muted)' }}>No hay empresas registradas.</p>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      {companies.map(c => (
+                      {companies.filter(c => role === 'steven_marin' || c.is_active !== 0).map(c => (
                         <div
                           key={c.id}
                           onClick={() => openCompanyProfile(c)}
