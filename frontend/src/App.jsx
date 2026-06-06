@@ -64,6 +64,7 @@ export default function App() {
   const [editingProfileCompany, setEditingProfileCompany] = useState(false);
   const [profileCompanyEdit, setProfileCompanyEdit] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '' });
   const [companyFilesLoading, setCompanyFilesLoading] = useState(false);
+  const [previewFile, setPreviewFile] = useState(null);
 
   const chatEndRef = useRef(null);
 
@@ -974,24 +975,28 @@ export default function App() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {companyFiles.map(f => (
                           <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: 'var(--bg-color)', borderRadius: '0.5rem', fontSize: '0.875rem' }}>
-                            <span style={{ flex: 1 }}>📄 {f.filename}</span>
+                            <span
+                              onClick={() => setPreviewFile(f)}
+                              style={{ flex: 1, cursor: 'pointer', color: 'var(--accent-color)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                            >📄 {f.filename}</span>
                             <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{new Date(f.created_at).toLocaleDateString('es-CO')}</span>
+                            <button
+                              onClick={() => setPreviewFile(f)}
+                              className="btn-secondary"
+                              style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
+                            >👁 Ver</button>
                             <a
                               href={`${import.meta.env.VITE_API_URL}${f.path}`}
                               target="_blank"
                               rel="noreferrer"
                               className="btn-secondary"
                               style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', textDecoration: 'none' }}
-                            >
-                              ⬇ Descargar
-                            </a>
+                            >⬇ Descargar</a>
                             <button
                               className="btn-danger"
                               style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
                               onClick={() => handleDeleteCompanyFile(f.id)}
-                            >
-                              ×
-                            </button>
+                            >×</button>
                           </div>
                         ))}
                       </div>
@@ -1401,6 +1406,41 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* MODAL PREVISUALIZAR DOCUMENTO */}
+      {previewFile && (() => {
+        const url = `${import.meta.env.VITE_API_URL}${previewFile.path}`;
+        const ext = previewFile.filename.split('.').pop().toLowerCase();
+        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+        return (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.75)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '1rem' }}>
+            <div style={{ background: 'var(--surface-color)', borderRadius: '1rem', width: '90%', maxWidth: '900px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+              {/* Header */}
+              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontSize: '1.25rem' }}>📄</span>
+                  <div>
+                    <div style={{ fontWeight: '600', color: 'var(--primary-color)' }}>{previewFile.filename}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(previewFile.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <a href={url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', textDecoration: 'none' }}>⬇ Descargar</a>
+                  <button onClick={() => setPreviewFile(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-muted)', lineHeight: 1 }}>×</button>
+                </div>
+              </div>
+              {/* Contenido */}
+              <div style={{ flex: 1, overflow: 'auto', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
+                {isImage ? (
+                  <img src={url} alt={previewFile.filename} style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: '0.5rem' }} />
+                ) : (
+                  <iframe src={url} title={previewFile.filename} style={{ width: '100%', height: '70vh', border: 'none' }} />
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* MODAL EDITAR USUARIO */}
       {editingUser && (
