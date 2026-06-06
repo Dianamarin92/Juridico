@@ -56,6 +56,9 @@ export default function App() {
   const [editCompany, setEditCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '' });
   const [editPassword, setEditPassword] = useState('');
 
+  const [editingUser, setEditingUser] = useState(null);
+  const [editUserForm, setEditUserForm] = useState({ email: '', role: '', password: '' });
+
   const [profileCompany, setProfileCompany] = useState(null);
   const [companyFiles, setCompanyFiles] = useState([]);
   const [editingProfileCompany, setEditingProfileCompany] = useState(false);
@@ -346,6 +349,30 @@ export default function App() {
     }
   };
 
+  const handleSaveUser = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const payload = {};
+      if (editUserForm.email !== undefined) payload.email = editUserForm.email;
+      if (editUserForm.role) payload.role = editUserForm.role;
+      if (editUserForm.password) payload.password = editUserForm.password;
+      await api.updateUser(editingUser.id, payload);
+      setEditingUser(null);
+      setLawyers(await api.getUsers());
+    } catch (err) { setError(err.message); }
+    finally { setBusy(false); }
+  };
+
+  const handleToggleUser = async (u) => {
+    setBusy(true);
+    try {
+      await api.toggleUserActive(u.id, !u.is_active);
+      setLawyers(prev => prev.map(x => x.id === u.id ? { ...x, is_active: x.is_active ? 0 : 1 } : x));
+    } catch (err) { setError(err.message); }
+    finally { setBusy(false); }
+  };
+
   const handleSaveAdminPassword = async (e) => {
     e.preventDefault();
     setBusy(true);
@@ -486,6 +513,11 @@ export default function App() {
             <div className={`nav-link ${currentView === 'companyProfiles' ? 'active' : ''}`} onClick={() => { setProfileCompany(null); setCurrentView('companyProfiles'); }}>
               Perfil Empresa
             </div>
+            {role === 'steven_marin' && (
+              <div className={`nav-link ${currentView === 'usersManagement' ? 'active' : ''}`} onClick={() => setCurrentView('usersManagement')}>
+                Usuarios del Sistema
+              </div>
+            )}
             <div className={`nav-link ${currentView === 'adminProfile' ? 'active' : ''}`} onClick={() => { setAdminPassword(''); setCurrentView('adminProfile'); }}>
               Mi Perfil
             </div>
@@ -614,6 +646,65 @@ export default function App() {
                 </div>
               )}
             </>
+          )}
+
+          {/* USUARIOS DEL SISTEMA */}
+          {currentView === 'usersManagement' && role === 'steven_marin' && (
+            <div>
+              <div className="view-header" style={{ marginBottom: '1.5rem' }}>
+                <div>
+                  <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Usuarios del Sistema</h1>
+                  <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Gestiona los usuarios administrativos del portal.</p>
+                </div>
+                <button className="btn-primary" onClick={() => setIsCreateUserOpen(true)}>+ Nuevo Usuario</button>
+              </div>
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Usuario (Cédula)</th>
+                      <th>Correo</th>
+                      <th>Rol</th>
+                      <th style={{ textAlign: 'center' }}>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lawyers.length === 0 && (
+                      <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No hay usuarios registrados.</td></tr>
+                    )}
+                    {lawyers.map(u => {
+                      const active = u.is_active !== 0;
+                      return (
+                        <tr key={u.id} style={{ opacity: active ? 1 : 0.55 }}>
+                          <td style={{ fontWeight: '600' }}>{u.username}</td>
+                          <td style={{ color: 'var(--text-muted)' }}>{u.email || '—'}</td>
+                          <td><span className="role-badge">{ROLE_LABELS[u.role] || u.role}</span></td>
+                          <td style={{ textAlign: 'center' }}>
+                            {active
+                              ? <span style={{ background: '#d1fae5', color: '#065f46', padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600' }}>Activo</span>
+                              : <span style={{ background: '#f3f4f6', color: '#6b7280', padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600' }}>Inactivo</span>}
+                          </td>
+                          <td style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <button
+                              className="btn-secondary"
+                              style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+                              onClick={() => { setEditingUser(u); setEditUserForm({ email: u.email || '', role: u.role, password: '' }); }}
+                            >Editar</button>
+                            {u.id !== user.id && (
+                              <button
+                                onClick={() => handleToggleUser(u)}
+                                style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: 'none', border: `1px solid ${active ? '#f59e0b' : '#10b981'}`, color: active ? '#b45309' : '#059669', borderRadius: '0.4rem', cursor: 'pointer' }}
+                              >{active ? 'Desactivar' : 'Activar'}</button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
 
           {/* INFORMES */}
@@ -1286,6 +1377,56 @@ export default function App() {
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                 <button type="button" className="btn-secondary" onClick={() => setIsCreateCompanyOpen(false)}>Cancelar</button>
                 <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Creando...' : 'Crear Empresa'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDITAR USUARIO */}
+      {editingUser && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div style={{ backgroundColor: 'var(--surface-color)', padding: '2rem', borderRadius: '1rem', width: '440px', maxWidth: '100%', border: '1px solid var(--border-color)' }}>
+            <h2 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Editar Usuario</h2>
+            <p style={{ margin: '0 0 1.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Cédula: <strong>{editingUser.username}</strong></p>
+            <form onSubmit={handleSaveUser} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>Correo electrónico</label>
+                <input
+                  type="email"
+                  value={editUserForm.email}
+                  onChange={e => setEditUserForm(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="Ej. abogada@marinabogados.com"
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>Rol</label>
+                <select
+                  value={editUserForm.role}
+                  onChange={e => setEditUserForm(prev => ({ ...prev, role: e.target.value }))}
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
+                >
+                  <option value="abogada_asignada">Abogada Asignada</option>
+                  <option value="abogada_lider">Abogada Líder</option>
+                  <option value="steven_marin">Admin (Acceso Total)</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                  Nueva contraseña <span style={{ color: 'var(--text-muted)', fontWeight: '400' }}>(dejar vacío para no cambiar)</span>
+                </label>
+                <input
+                  type="password"
+                  value={editUserForm.password}
+                  onChange={e => setEditUserForm(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="••••••••"
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                <button type="button" className="btn-secondary" onClick={() => setEditingUser(null)}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Guardando...' : 'Guardar Cambios'}</button>
               </div>
             </form>
           </div>

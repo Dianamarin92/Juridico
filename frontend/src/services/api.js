@@ -54,6 +54,12 @@ export const getUsers = () => request('/users');
 export const createUser = (data) =>
   request('/users', { method: 'POST', body: JSON.stringify(data) });
 
+// Usuarios — editar y activar/desactivar
+export const updateUser = (id, data) =>
+  request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const toggleUserActive = (id, is_active) =>
+  request(`/users/${id}/active`, { method: 'PUT', body: JSON.stringify({ is_active }) });
+
 // Activar / desactivar empresa
 export const toggleCompanyActive = (id, is_active) =>
   request(`/companies/${id}/active`, { method: 'PUT', body: JSON.stringify({ is_active }) });

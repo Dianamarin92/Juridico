@@ -179,6 +179,12 @@ ALTER TABLE tickets ADD COLUMN is_new TINYINT(1) NOT NULL DEFAULT 1;
 ALTER TABLE companies ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1;
 ```
 
+### Columna `is_active` en `users` (ALTER ejecutado en producción — 2026-06-06)
+
+```sql
+ALTER TABLE users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1;
+```
+
 ## Frontend — estructura clave
 
 ```

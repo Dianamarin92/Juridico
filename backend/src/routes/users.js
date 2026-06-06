@@ -5,11 +5,10 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-// Lista de abogadas disponibles para asignar tickets
 router.get('/', auth, async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT id, username, email, role FROM users WHERE role != 'cliente' ORDER BY role"
+      "SELECT id, username, email, role, is_active FROM users WHERE role != 'cliente' ORDER BY role"
     );
     res.json(rows);
   } catch {
@@ -17,7 +16,6 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Crear usuario administrativo (abogada)
 router.post('/', auth, async (req, res) => {
   const { username, email, password, role } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
@@ -38,7 +36,6 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// Actualizar contraseña del usuario autenticado
 router.put('/me/password', auth, async (req, res) => {
   const { password } = req.body;
   if (!password || password.length < 4)
@@ -49,6 +46,44 @@ router.put('/me/password', auth, async (req, res) => {
     res.json({ ok: true });
   } catch {
     res.status(500).json({ error: 'Error al actualizar contraseña' });
+  }
+});
+
+router.put('/:id', auth, async (req, res) => {
+  if (req.user.role !== 'steven_marin') return res.status(403).json({ error: 'Sin permisos' });
+  const { id } = req.params;
+  const { email, role, password } = req.body;
+  try {
+    const validRoles = ['abogada_asignada', 'abogada_lider', 'steven_marin'];
+    if (role && !validRoles.includes(role)) return res.status(400).json({ error: 'Rol no válido' });
+
+    const updates = [];
+    const values = [];
+    if (email !== undefined) { updates.push('email = ?'); values.push(email || null); }
+    if (role) { updates.push('role = ?'); values.push(role); }
+    if (password) {
+      const hash = await bcrypt.hash(password, 10);
+      updates.push('password_hash = ?');
+      values.push(hash);
+    }
+    if (updates.length === 0) return res.status(400).json({ error: 'Nada que actualizar' });
+    values.push(id);
+    await db.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: 'Error al actualizar usuario' });
+  }
+});
+
+router.put('/:id/active', auth, async (req, res) => {
+  if (req.user.role !== 'steven_marin') return res.status(403).json({ error: 'Sin permisos' });
+  const { id } = req.params;
+  const { is_active } = req.body;
+  try {
+    await db.query('UPDATE users SET is_active = ? WHERE id = ?', [is_active ? 1 : 0, id]);
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: 'Error al actualizar estado' });
   }
 });
 

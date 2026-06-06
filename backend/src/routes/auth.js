@@ -24,6 +24,10 @@ router.post('/login', async (req, res) => {
         return res.status(403).json({ error: 'Tu empresa ha sido desactivada. Contacta al administrador.' });
     }
 
+    if (user.role !== 'cliente' && user.is_active === 0) {
+      return res.status(403).json({ error: 'Tu cuenta ha sido desactivada. Contacta al administrador.' });
+    }
+
     const token = jwt.sign(
       { id: user.id, role: user.role, company_id: user.company_id },
       process.env.JWT_SECRET,
