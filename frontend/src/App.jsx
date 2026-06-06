@@ -558,9 +558,6 @@ export default function App() {
               </span>
             )}
             <span className="role-badge">{ROLE_LABELS[role] || role}</span>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: 'var(--accent-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-              {(user.username || '?').charAt(0).toUpperCase()}
-            </div>
             <button className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem', marginLeft: '0.5rem' }} onClick={handleLogout}>
               Cerrar Sesión
             </button>
