@@ -50,7 +50,7 @@ router.put('/me/password', auth, async (req, res) => {
 });
 
 router.put('/:id', auth, async (req, res) => {
-  if (req.user.role !== 'steven_marin') return res.status(403).json({ error: 'Sin permisos' });
+  if (!['steven_marin', 'abogada_lider'].includes(req.user.role)) return res.status(403).json({ error: 'Sin permisos' });
   const { id } = req.params;
   const { name, email, role, password } = req.body;
   try {
@@ -77,7 +77,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 router.put('/:id/active', auth, async (req, res) => {
-  if (req.user.role !== 'steven_marin') return res.status(403).json({ error: 'Sin permisos' });
+  if (!['steven_marin', 'abogada_lider'].includes(req.user.role)) return res.status(403).json({ error: 'Sin permisos' });
   const { id } = req.params;
   const { is_active } = req.body;
   try {

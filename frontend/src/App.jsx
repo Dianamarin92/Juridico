@@ -514,7 +514,7 @@ export default function App() {
             <div className={`nav-link ${currentView === 'companyProfiles' ? 'active' : ''}`} onClick={() => { setProfileCompany(null); setCurrentView('companyProfiles'); }}>
               Perfil Empresa
             </div>
-            {role === 'steven_marin' && (
+            {(role === 'steven_marin' || role === 'abogada_lider') && (
               <div className={`nav-link ${currentView === 'usersManagement' ? 'active' : ''}`} onClick={() => setCurrentView('usersManagement')}>
                 Usuarios del Sistema
               </div>
@@ -650,7 +650,7 @@ export default function App() {
           )}
 
           {/* USUARIOS DEL SISTEMA */}
-          {currentView === 'usersManagement' && role === 'steven_marin' && (
+          {currentView === 'usersManagement' && (role === 'steven_marin' || role === 'abogada_lider') && (
             <div>
               <div className="view-header" style={{ marginBottom: '1.5rem' }}>
                 <div>
