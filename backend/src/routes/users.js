@@ -22,6 +22,7 @@ router.post('/', auth, async (req, res) => {
   const { username, email, password, role } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
   const validRoles = ['abogada_asignada', 'abogada_lider'];
+  if (req.user.role === 'steven_marin') validRoles.push('steven_marin');
   if (!validRoles.includes(role)) return res.status(400).json({ error: 'Rol no válido' });
   try {
     const hash = await bcrypt.hash(password, 10);

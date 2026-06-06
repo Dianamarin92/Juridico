@@ -196,8 +196,8 @@ export default function App() {
   const handleChangeStatus = async (newStatus) => {
     setBusy(true);
     try {
-      await api.updateTicket(selectedTicket.id, { status: newStatus, assigned_to: selectedTicket.assigned_to });
-      setSelectedTicket(prev => ({ ...prev, status: newStatus }));
+      await api.updateTicket(selectedTicket.id, { status: newStatus, assigned_to: selectedTicket.assigned_to, is_new: false });
+      setSelectedTicket(prev => ({ ...prev, status: newStatus, is_new: 0 }));
       setTickets(await api.getTickets(selectedCompany.id));
     } catch (err) {
       setError(err.message);
@@ -1217,6 +1217,9 @@ export default function App() {
                 >
                   <option value="abogada_asignada">Abogada Asignada</option>
                   <option value="abogada_lider">Abogada Líder</option>
+                  {role === 'steven_marin' && (
+                    <option value="steven_marin">Admin (Acceso Total)</option>
+                  )}
                 </select>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>

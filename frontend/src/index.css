@@ -316,6 +316,22 @@ body {
   background-color: #f9fafb;
 }
 
+.btn-danger {
+  background-color: white;
+  color: #dc2626;
+  border: 1px solid #dc2626;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-danger:hover {
+  background-color: #fee2e2;
+}
+
 /* Chat / Messaging */
 .chat-container {
   background: var(--surface-color);
