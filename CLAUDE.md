@@ -203,7 +203,7 @@ frontend/src/
     └── api.js           Capa HTTP → llama a api.marinyabogados.com.co
 ```
 
-## Funcionalidades implementadas (al 2026-06-04)
+## Funcionalidades implementadas (al 2026-06-06)
 
 ### Vista cliente
 - Al iniciar sesión va directo a **Mis Tickets** (no pasa por directorio de empresas)
@@ -215,17 +215,35 @@ frontend/src/
 - **Mi Perfil** en el sidebar: página completa (no modal) para editar datos de empresa (nombre, NIT, contacto, teléfono, correo) y cambiar contraseña
 - Panel de adjuntos en ticket: botón **×** para eliminar cada archivo
 
-### Vista admin (abogadas / Steven Marín)
+### Vista admin (abogadas / Admin)
 - **Directorio de empresas** muestra conteo de tickets por estado (badges de color) en cada fila, usando LEFT JOIN en la consulta SQL
 - **+ Nueva Empresa:** formulario con datos de empresa (nombre, NIT, contacto, teléfono, correo) y acceso del cliente (usuario + contraseña) — crea empresa y usuario cliente en un solo paso
-- **+ Nuevo Usuario:** formulario con campos: Cédula, Correo electrónico (opcional), Contraseña, Rol — crea Abogada Asignada o Abogada Líder sin acceso a Informes
-- **Eliminar empresa:** botón en cada fila del directorio — borra empresa, usuario cliente y todos sus tickets en cascada
-- **Desactivar / Activar empresa:** botón amarillo/verde por fila — cliente desactivado no puede iniciar sesión (verificación en `/auth/login`); empresa aparece atenuada con badge "Desactivada"
-- **Punto rojo en tickets nuevos:** tickets creados por el cliente aparecen con un punto rojo parpadeante y título en negrita en la vista de admin/abogada; el punto desaparece cuando el admin abre el ticket (`is_new = false`)
-- **Mi Perfil (admin):** página con barra de progreso de almacenamiento de documentos (GET `/files/storage` lee el directorio `uploads/`, límite: 5 GB) y formulario para cambiar contraseña
-- **Perfil Empresa:** sección en sidebar admin que lista todas las empresas; al entrar a una muestra datos, conteo de tickets por estado, y panel de documentos propios de la empresa (subir/descargar/eliminar archivos como manuales, contratos, etc.)
-- **Auto-NIT en nueva empresa:** al escribir el NIT en el formulario de creación, el campo Usuario se sincroniza automáticamente
+- **+ Nuevo Usuario:** formulario con campos: Nombre completo, Cédula, Correo electrónico (opcional), Contraseña, Rol
+- **Eliminar empresa:** solo Admin — borra empresa, usuario cliente y todos sus tickets en cascada
+- **Desactivar / Activar empresa:** solo Admin — con confirmación; fila desactivada aparece con fondo rojo, nombre tachado y badge "Desactivada"; cliente no puede iniciar sesión
+- Empresas desactivadas: solo visibles para Admin; Abogada Líder y Abogada Asignada no las ven
+- **Punto rojo en tickets nuevos:** desaparece al abrir el ticket O al cambiar su estado (`is_new = false`)
+- **Mi Perfil (admin):** barra de progreso de almacenamiento (límite 5 GB) y cambio de contraseña
+- **Perfil Empresa:** lista empresas; al entrar muestra datos editables, conteo de tickets por estado, y documentos (subir/ver/descargar/eliminar); popup de previsualización con info de empresa + vista de imagen o PDF
+- **Auto-NIT en nueva empresa:** campo Usuario se sincroniza al escribir el NIT
+- **Usuarios del Sistema** (Admin y Abogada Líder): tabla con nombre, cédula, correo, rol y estado de todos los usuarios; botones Editar (nombre, correo, rol, contraseña) y Desactivar/Activar; usuario desactivado no puede iniciar sesión
+- Rol `steven_marin` se muestra como **Admin** en toda la interfaz
+- Al cerrar sesión va directamente al login (no a la landing)
+- **Nombre del usuario** visible en la barra superior (en lugar del rol)
+- **Favicon** configurado con el logo de Marín & Abogados
 - Login por `username` (cédula/NIT), no por email
+
+### Permisos por rol
+
+| Acción | Admin | Abogada Líder | Abogada Asignada |
+|--------|:-----:|:-------------:|:----------------:|
+| Ver directorio de empresas | ✅ | ✅ | ✅ |
+| Ver empresas desactivadas | ✅ | ❌ | ❌ |
+| Activar / Desactivar empresa | ✅ | ❌ | ❌ |
+| Eliminar empresa | ✅ | ❌ | ❌ |
+| Usuarios del Sistema | ✅ | ✅ | ❌ |
+| Crear usuario Admin | ✅ | ❌ | ❌ |
+| Informes | ✅ | ❌ | ❌ |
 
 ### Indicadores de carga
 - **Barra roja animada** fija en la parte superior en todas las pantallas (login incluido) durante cualquier petición
