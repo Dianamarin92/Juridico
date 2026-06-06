@@ -338,6 +338,8 @@ export default function App() {
   };
 
   const handleToggleCompany = async (company) => {
+    const accion = company.is_active ? 'desactivar' : 'activar';
+    if (!window.confirm(`¿Seguro que deseas ${accion} la empresa "${company.name}"?`)) return;
     setBusy(true);
     try {
       await api.toggleCompanyActive(company.id, !company.is_active);
