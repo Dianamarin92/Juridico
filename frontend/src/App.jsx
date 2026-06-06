@@ -603,11 +603,11 @@ export default function App() {
                       {companies.map(company => {
                         const active = company.is_active !== 0;
                         return (
-                        <tr key={company.id} style={{ opacity: active ? 1 : 0.55 }}>
+                        <tr key={company.id} style={{ background: active ? '' : '#fef2f2', opacity: active ? 1 : 0.85 }}>
                           <td onClick={() => openCompany(company)} style={{ cursor: 'pointer' }}>
                             <div className="company-name-cell">
-                              {company.name}
-                              {!active && <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', background: '#f3f4f6', color: '#6b7280', padding: '0.15rem 0.5rem', borderRadius: '999px', fontWeight: '600' }}>Desactivada</span>}
+                              <span style={{ color: active ? 'var(--primary-color)' : '#9ca3af', textDecoration: active ? 'none' : 'line-through' }}>{company.name}</span>
+                              {!active && <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', background: '#fee2e2', color: '#b91c1c', padding: '0.15rem 0.5rem', borderRadius: '999px', fontWeight: '600' }}>Desactivada</span>}
                             </div>
                           </td>
                           <td style={{ textAlign: 'center' }}>
@@ -634,7 +634,7 @@ export default function App() {
                             <button className="btn-secondary" onClick={() => openCompany(company)} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Ver →</button>
                             <button
                               onClick={() => handleToggleCompany(company)}
-                              style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: 'none', border: `1px solid ${active ? '#f59e0b' : '#10b981'}`, color: active ? '#b45309' : '#059669', borderRadius: '0.4rem', cursor: 'pointer' }}
+                              style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', borderRadius: '0.4rem', cursor: 'pointer', fontWeight: '600', border: 'none', background: active ? '#fef3c7' : '#10b981', color: active ? '#b45309' : '#ffffff' }}
                             >{active ? 'Desactivar' : 'Activar'}</button>
                             <button onClick={() => handleDeleteCompany(company)} style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: 'none', border: '1px solid #dc2626', color: '#dc2626', borderRadius: '0.4rem', cursor: 'pointer' }}>Eliminar</button>
                           </td>
