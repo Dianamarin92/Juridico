@@ -638,7 +638,9 @@ export default function App() {
                                 style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', borderRadius: '0.4rem', cursor: 'pointer', fontWeight: '600', border: 'none', background: active ? '#fef3c7' : '#10b981', color: active ? '#b45309' : '#ffffff' }}
                               >{active ? 'Desactivar' : 'Activar'}</button>
                             )}
-                            <button onClick={() => handleDeleteCompany(company)} style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: 'none', border: '1px solid #dc2626', color: '#dc2626', borderRadius: '0.4rem', cursor: 'pointer' }}>Eliminar</button>
+                            {role === 'steven_marin' && (
+                              <button onClick={() => handleDeleteCompany(company)} style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: 'none', border: '1px solid #dc2626', color: '#dc2626', borderRadius: '0.4rem', cursor: 'pointer' }}>Eliminar</button>
+                            )}
                           </td>
                         </tr>
                         );
