@@ -7,7 +7,7 @@ const ROLE_LABELS = {
   cliente:           'Cliente',
   abogada_asignada:  'Abogada Asignada',
   abogada_lider:     'Abogada Líder',
-  steven_marin:      'Steven Marín',
+  steven_marin:      'Admin',
 };
 
 const STATUS_INFO = {
@@ -1325,7 +1325,7 @@ export default function App() {
                   <option value="abogada_asignada">Abogada Asignada</option>
                   <option value="abogada_lider">Abogada Líder</option>
                   {role === 'steven_marin' && (
-                    <option value="steven_marin">Admin (Acceso Total)</option>
+                    <option value="steven_marin">Admin</option>
                   )}
                 </select>
               </div>
@@ -1435,7 +1435,7 @@ export default function App() {
                 >
                   <option value="abogada_asignada">Abogada Asignada</option>
                   <option value="abogada_lider">Abogada Líder</option>
-                  <option value="steven_marin">Admin (Acceso Total)</option>
+                  <option value="steven_marin">Admin</option>
                 </select>
               </div>
               <div>
