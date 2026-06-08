@@ -687,7 +687,7 @@ export default function App() {
                       <th>Nombre</th>
                       <th>Cédula</th>
                       <th>Correo</th>
-                      <th>Rol</th>
+                      <th style={{ textAlign: 'center' }}>Rol</th>
                       <th style={{ textAlign: 'center' }}>Estado</th>
                       <th>Acciones</th>
                     </tr>
@@ -703,7 +703,7 @@ export default function App() {
                           <td style={{ fontWeight: '600' }}>{u.name || '—'}</td>
                           <td style={{ color: 'var(--text-muted)' }}>{u.username}</td>
                           <td style={{ color: 'var(--text-muted)' }}>{u.email || '—'}</td>
-                          <td><span className="role-badge">{ROLE_LABELS[u.role] || u.role}</span></td>
+                          <td style={{ textAlign: 'center' }}><span className="role-badge">{ROLE_LABELS[u.role] || u.role}</span></td>
                           <td style={{ textAlign: 'center' }}>
                             {active
                               ? <span style={{ background: '#d1fae5', color: '#065f46', padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600' }}>Activo</span>
