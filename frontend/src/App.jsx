@@ -1574,6 +1574,9 @@ export default function App() {
         const ext = previewFile.filename.split('.').pop().toLowerCase();
         const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
         const isPdf = ext === 'pdf';
+        const isOffice = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext);
+        const officeIcon = ['xls', 'xlsx'].includes(ext) ? '📊' : ['ppt', 'pptx'].includes(ext) ? '📑' : '📝';
+        const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
         return (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '1rem' }}>
             <div style={{ background: 'var(--surface-color)', borderRadius: '1rem', width: '98%', maxWidth: '1100px', height: '95vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '1px solid var(--border-color)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
@@ -1581,7 +1584,7 @@ export default function App() {
               {/* Header */}
               <div style={{ padding: '0.85rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ fontSize: '1.4rem' }}>{isImage ? '🖼️' : isPdf ? '📄' : '📎'}</span>
+                  <span style={{ fontSize: '1.4rem' }}>{isImage ? '🖼️' : isPdf ? '📄' : isOffice ? officeIcon : '📎'}</span>
                   <div>
                     <div style={{ fontWeight: '700', color: 'var(--primary-color)', fontSize: '0.95rem' }}>{previewFile.filename}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
@@ -1620,11 +1623,9 @@ export default function App() {
                 {isImage ? (
                   <img src={url} alt={previewFile.filename} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                 ) : isPdf ? (
-                  <iframe
-                    src={url}
-                    title={previewFile.filename}
-                    style={{ width: '100%', height: '100%', border: 'none' }}
-                  />
+                  <iframe src={url} title={previewFile.filename} style={{ width: '100%', height: '100%', border: 'none' }} />
+                ) : isOffice ? (
+                  <iframe src={officeViewerUrl} title={previewFile.filename} style={{ width: '100%', height: '100%', border: 'none' }} />
                 ) : (
                   <div style={{ textAlign: 'center', padding: '3rem', color: '#d1d5db' }}>
                     <p style={{ fontSize: '3rem', margin: '0 0 1rem' }}>📎</p>
