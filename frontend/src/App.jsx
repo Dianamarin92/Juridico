@@ -384,6 +384,16 @@ export default function App() {
     finally { setBusy(false); }
   };
 
+  const handleDeleteUser = async (u) => {
+    if (!window.confirm(`¿Seguro que deseas eliminar el usuario "${u.name || u.username}"? Esta acción no se puede deshacer.`)) return;
+    setBusy(true);
+    try {
+      await api.deleteUser(u.id);
+      setLawyers(prev => prev.filter(x => x.id !== u.id));
+    } catch (err) { setError(err.message); }
+    finally { setBusy(false); }
+  };
+
   const handleSaveAdminPassword = async (e) => {
     e.preventDefault();
     setBusy(true);
@@ -710,6 +720,12 @@ export default function App() {
                                 onClick={() => handleToggleUser(u)}
                                 style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: 'none', border: `1px solid ${active ? '#f59e0b' : '#10b981'}`, color: active ? '#b45309' : '#059669', borderRadius: '0.4rem', cursor: 'pointer' }}
                               >{active ? 'Desactivar' : 'Activar'}</button>
+                            )}
+                            {role === 'steven_marin' && u.id !== user.id && (
+                              <button
+                                onClick={() => handleDeleteUser(u)}
+                                style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: 'none', border: '1px solid #dc2626', color: '#dc2626', borderRadius: '0.4rem', cursor: 'pointer' }}
+                              >Eliminar</button>
                             )}
                           </td>
                         </tr>

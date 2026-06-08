@@ -88,4 +88,16 @@ router.put('/:id/active', auth, async (req, res) => {
   }
 });
 
+router.delete('/:id', auth, async (req, res) => {
+  if (req.user.role !== 'steven_marin') return res.status(403).json({ error: 'Sin permisos' });
+  const { id } = req.params;
+  if (parseInt(id) === req.user.id) return res.status(400).json({ error: 'No puedes eliminar tu propio usuario' });
+  try {
+    await db.query('DELETE FROM users WHERE id = ?', [id]);
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
+});
+
 module.exports = router;
