@@ -1575,38 +1575,39 @@ export default function App() {
         const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
         const isPdf = ext === 'pdf';
         return (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '1rem' }}>
-            <div style={{ background: 'var(--surface-color)', borderRadius: '1rem', width: '95%', maxWidth: '1000px', maxHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '1px solid var(--border-color)', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '1rem' }}>
+            <div style={{ background: 'var(--surface-color)', borderRadius: '1rem', width: '98%', maxWidth: '1100px', height: '95vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '1px solid var(--border-color)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
 
               {/* Header */}
-              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <div style={{ padding: '0.85rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ fontSize: '1.5rem' }}>{isImage ? '🖼️' : '📄'}</span>
+                  <span style={{ fontSize: '1.4rem' }}>{isImage ? '🖼️' : isPdf ? '📄' : '📎'}</span>
                   <div>
-                    <div style={{ fontWeight: '700', color: 'var(--primary-color)', fontSize: '1rem' }}>{previewFile.filename}</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
-                      {profileCompany?.name && <span style={{ fontWeight: '600', color: 'var(--accent-color)' }}>{profileCompany.name} · </span>}
+                    <div style={{ fontWeight: '700', color: 'var(--primary-color)', fontSize: '0.95rem' }}>{previewFile.filename}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                      {profileCompany?.name && <span style={{ fontWeight: '600' }}>{profileCompany.name} · </span>}
                       Subido el {new Date(previewFile.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
                     </div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                  <a href={url} download={previewFile.filename} className="btn-primary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', textDecoration: 'none' }}>⬇ Descargar</a>
-                  <button onClick={() => setPreviewFile(null)} style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: '0.5rem', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-muted)', lineHeight: 1, padding: '0.25rem 0.6rem' }}>×</button>
+                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                  <a href={url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', textDecoration: 'none' }}>↗ Abrir</a>
+                  <a href={url} download={previewFile.filename} className="btn-primary" style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', textDecoration: 'none' }}>⬇ Descargar</a>
+                  <button onClick={() => setPreviewFile(null)} style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: '0.5rem', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-muted)', lineHeight: 1, padding: '0.2rem 0.55rem' }}>×</button>
                 </div>
               </div>
 
-              {/* Info empresa */}
+              {/* Info empresa — compacta */}
               {profileCompany && (
-                <div style={{ padding: '0.75rem 1.5rem', background: '#f8f9fa', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '2rem', flexShrink: 0, flexWrap: 'wrap' }}>
+                <div style={{ padding: '0.5rem 1.5rem', background: '#f8f9fa', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '1.5rem', flexShrink: 0, flexWrap: 'wrap' }}>
                   {[
                     { label: 'Empresa', value: profileCompany.name },
                     { label: 'NIT', value: profileCompany.nit },
                     { label: 'Contacto', value: profileCompany.contact_name },
-                    { label: 'Teléfono', value: profileCompany.phone },
+                    { label: 'Tel', value: profileCompany.phone },
                     { label: 'Correo', value: profileCompany.email },
                   ].filter(d => d.value).map(({ label, value }) => (
-                    <div key={label} style={{ fontSize: '0.8rem' }}>
+                    <div key={label} style={{ fontSize: '0.75rem' }}>
                       <span style={{ color: 'var(--text-muted)', fontWeight: '600' }}>{label}: </span>
                       <span style={{ color: 'var(--primary-color)' }}>{value}</span>
                     </div>
@@ -1614,19 +1615,18 @@ export default function App() {
                 </div>
               )}
 
-              {/* Previsualización */}
-              <div style={{ flex: 1, overflow: 'auto', background: '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+              {/* Previsualización — ocupa todo el espacio restante */}
+              <div style={{ flex: 1, overflow: 'hidden', background: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {isImage ? (
-                  <img src={url} alt={previewFile.filename} style={{ maxWidth: '100%', maxHeight: '65vh', objectFit: 'contain', borderRadius: '0.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }} />
+                  <img src={url} alt={previewFile.filename} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                 ) : isPdf ? (
-                  <object data={url} type="application/pdf" style={{ width: '100%', height: '65vh' }}>
-                    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                      <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Tu navegador no puede mostrar este PDF directamente.</p>
-                      <a href={url} target="_blank" rel="noreferrer" className="btn-primary" style={{ textDecoration: 'none', padding: '0.6rem 1.25rem' }}>Abrir en nueva pestaña</a>
-                    </div>
-                  </object>
+                  <iframe
+                    src={url}
+                    title={previewFile.filename}
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                  />
                 ) : (
-                  <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                  <div style={{ textAlign: 'center', padding: '3rem', color: '#d1d5db' }}>
                     <p style={{ fontSize: '3rem', margin: '0 0 1rem' }}>📎</p>
                     <p style={{ fontSize: '1rem', marginBottom: '1.5rem' }}>Vista previa no disponible para este tipo de archivo.</p>
                     <a href={url} download={previewFile.filename} className="btn-primary" style={{ textDecoration: 'none', padding: '0.6rem 1.25rem' }}>⬇ Descargar archivo</a>
