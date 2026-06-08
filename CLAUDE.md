@@ -126,11 +126,15 @@ Todas las rutas son relativas a `https://api.marinyabogados.com.co`:
 | DELETE | `/tickets/:id` | Eliminar ticket (solo si está en `pending`) |
 | GET/POST | `/messages` | Mensajes de un ticket |
 | POST | `/files/upload` | Subir archivo |
-| GET | `/files` | Archivos de un ticket |
+| GET | `/files` | Archivos de un ticket o empresa |
 | DELETE | `/files/:id` | Eliminar archivo |
-| GET | `/users` | Listar abogadas (para asignación) |
-| POST | `/users` | Crear usuario administrativo (rol: abogada_asignada o abogada_lider) |
+| GET | `/users` | Listar usuarios administrativos |
+| POST | `/users` | Crear usuario administrativo |
+| PUT | `/users/:id` | Editar usuario (Admin o Abogada Líder) |
+| PUT | `/users/:id/active` | Activar/desactivar usuario (Admin o Abogada Líder) |
+| DELETE | `/users/:id` | Eliminar usuario (solo Admin) |
 | PUT | `/users/me/password` | Cambiar contraseña del usuario autenticado |
+| GET | `/reports/tickets` | Informe de tickets por empresa y período (solo Admin) |
 | GET | `/health` | Health check |
 
 ## Roles del sistema
@@ -203,7 +207,7 @@ frontend/src/
     └── api.js           Capa HTTP → llama a api.marinyabogados.com.co
 ```
 
-## Funcionalidades implementadas (al 2026-06-06)
+## Funcionalidades implementadas (al 2026-06-08)
 
 ### Vista cliente
 - Al iniciar sesión va directo a **Mis Tickets** (no pasa por directorio de empresas)
@@ -224,14 +228,27 @@ frontend/src/
 - Empresas desactivadas: solo visibles para Admin; Abogada Líder y Abogada Asignada no las ven
 - **Punto rojo en tickets nuevos:** desaparece al abrir el ticket O al cambiar su estado (`is_new = false`)
 - **Mi Perfil (admin):** barra de progreso de almacenamiento (límite 5 GB) y cambio de contraseña
-- **Perfil Empresa:** lista empresas; al entrar muestra datos editables, conteo de tickets por estado, y documentos (subir/ver/descargar/eliminar); popup de previsualización con info de empresa + vista de imagen o PDF
+- **Perfil Empresa:** lista empresas; al entrar muestra datos editables, conteo de tickets por estado, y documentos (subir/ver/descargar/eliminar); popup de previsualización con info de empresa + vista de imagen, PDF, Word, Excel o PowerPoint (Office Online Viewer)
 - **Auto-NIT en nueva empresa:** campo Usuario se sincroniza al escribir el NIT
-- **Usuarios del Sistema** (Admin y Abogada Líder): tabla con nombre, cédula, correo, rol y estado de todos los usuarios; botones Editar (nombre, correo, rol, contraseña) y Desactivar/Activar; usuario desactivado no puede iniciar sesión
+- **Usuarios del Sistema** (Admin y Abogada Líder): tabla con nombre, cédula, correo, rol y estado; botones Editar (nombre, correo, rol, contraseña), Desactivar/Activar y **Eliminar** (solo Admin); usuario desactivado no puede iniciar sesión
+- **Asignado a:** muestra el nombre completo del abogado (no el correo) en la tabla de tickets y en el detalle del ticket
+- **Módulo de Informes** (solo Admin): seleccionar empresa (o todas) + período (días/meses/años) + cantidad → genera tabla con conteo por estado; si es empresa específica muestra tarjetas resumen + tabla detallada de tickets
 - Rol `steven_marin` se muestra como **Admin** en toda la interfaz
 - Al cerrar sesión va directamente al login (no a la landing)
 - **Nombre del usuario** visible en la barra superior (en lugar del rol)
 - **Favicon** configurado con el logo de Marín & Abogados
 - Login por `username` (cédula/NIT), no por email
+
+### Popup de previsualización de documentos
+- Se abre desde Perfil Empresa al hacer clic en un documento
+- Ocupa el 95% de la pantalla para máxima visibilidad
+- Muestra info de empresa en barra compacta (nombre, NIT, contacto, teléfono, correo)
+- Botones: **↗ Abrir** (nueva pestaña) y **⬇ Descargar**
+- Formatos soportados:
+  - Imágenes (jpg, png, gif, webp, svg): `<img>` directo
+  - PDF: `<iframe>` directo (backend sirve con `X-Frame-Options: ALLOWALL`)
+  - Word/Excel/PowerPoint: Microsoft Office Online Viewer (`view.officeapps.live.com`)
+  - Otros: botón de descarga
 
 ### Permisos por rol
 
@@ -243,6 +260,7 @@ frontend/src/
 | Eliminar empresa | ✅ | ❌ | ❌ |
 | Usuarios del Sistema | ✅ | ✅ | ❌ |
 | Crear usuario Admin | ✅ | ❌ | ❌ |
+| Eliminar usuario | ✅ | ❌ | ❌ |
 | Informes | ✅ | ❌ | ❌ |
 
 ### Indicadores de carga
