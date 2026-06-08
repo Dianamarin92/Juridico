@@ -687,7 +687,7 @@ export default function App() {
                       <th>Nombre</th>
                       <th>Cédula</th>
                       <th>Correo</th>
-                      <th style={{ textAlign: 'center' }}>Rol</th>
+                      <th>Rol</th>
                       <th style={{ textAlign: 'center' }}>Estado</th>
                       <th>Acciones</th>
                     </tr>
@@ -700,16 +700,16 @@ export default function App() {
                       const active = u.is_active !== 0;
                       return (
                         <tr key={u.id} style={{ opacity: active ? 1 : 0.55 }}>
-                          <td style={{ fontWeight: '600', whiteSpace: 'nowrap' }}>{u.name || '—'}</td>
-                          <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{u.username}</td>
+                          <td style={{ fontWeight: '600' }}>{u.name || '—'}</td>
+                          <td style={{ color: 'var(--text-muted)' }}>{u.username}</td>
                           <td style={{ color: 'var(--text-muted)' }}>{u.email || '—'}</td>
-                          <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}><span className="role-badge">{ROLE_LABELS[u.role] || u.role}</span></td>
-                          <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                          <td><span className="role-badge">{ROLE_LABELS[u.role] || u.role}</span></td>
+                          <td style={{ textAlign: 'center' }}>
                             {active
                               ? <span style={{ background: '#d1fae5', color: '#065f46', padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600' }}>Activo</span>
                               : <span style={{ background: '#f3f4f6', color: '#6b7280', padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600' }}>Inactivo</span>}
                           </td>
-                          <td style={{ whiteSpace: 'nowrap', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <td style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <button
                               className="btn-secondary"
                               style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
