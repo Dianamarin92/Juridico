@@ -71,6 +71,13 @@ export const markTicketRead = (id) =>
 // Almacenamiento
 export const getStorage = () => request('/files/storage');
 
+// Informes
+export const getTicketReport = (company_id, period, value) => {
+  const params = new URLSearchParams({ company_id: company_id || 'all' });
+  if (period && value) { params.append('period', period); params.append('value', value); }
+  return request(`/reports/tickets?${params}`);
+};
+
 // Archivos de tickets
 export const getFiles = (ticket_id) => request(`/files?ticket_id=${ticket_id}`);
 export const deleteFile = (id) => request(`/files/${id}`, { method: 'DELETE' });

@@ -66,6 +66,13 @@ export default function App() {
   const [companyFilesLoading, setCompanyFilesLoading] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
 
+  const [reportCompany, setReportCompany] = useState('all');
+  const [reportPeriod, setReportPeriod]   = useState('month');
+  const [reportValue, setReportValue]     = useState('3');
+  const [reportData, setReportData]       = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError]     = useState('');
+
   const chatEndRef = useRef(null);
 
   const isLoggedIn = !!user;
@@ -716,9 +723,163 @@ export default function App() {
 
           {/* INFORMES */}
           {currentView === 'reports' && (
-            <div style={{ textAlign: 'center', marginTop: '4rem', color: 'var(--text-muted)' }}>
-              <h2>Módulo de Informes</h2>
-              <p>Esta sección está en construcción.</p>
+            <div style={{ maxWidth: '900px' }}>
+              <div className="view-header" style={{ marginBottom: '2rem' }}>
+                <div>
+                  <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Informes</h1>
+                  <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Consulta la actividad de tickets por empresa y período.</p>
+                </div>
+              </div>
+
+              {/* Filtros */}
+              <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)', marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', minWidth: '200px', flex: 1 }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>Empresa</label>
+                  <select value={reportCompany} onChange={e => setReportCompany(e.target.value)}
+                    style={{ padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontSize: '0.9rem' }}>
+                    <option value="all">Todas las empresas</option>
+                    {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>Período</label>
+                  <select value={reportPeriod} onChange={e => setReportPeriod(e.target.value)}
+                    style={{ padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontSize: '0.9rem' }}>
+                    <option value="day">Días</option>
+                    <option value="month">Meses</option>
+                    <option value="year">Años</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>
+                    Últimos {reportPeriod === 'day' ? 'días' : reportPeriod === 'month' ? 'meses' : 'años'}
+                  </label>
+                  <input type="number" min="1" max="100" value={reportValue}
+                    onChange={e => setReportValue(e.target.value)}
+                    style={{ padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontSize: '0.9rem', width: '80px' }} />
+                </div>
+
+                <button
+                  className="btn-primary"
+                  disabled={reportLoading}
+                  onClick={async () => {
+                    setReportLoading(true);
+                    setReportError('');
+                    setReportData(null);
+                    try {
+                      const data = await api.getTicketReport(reportCompany, reportPeriod, reportValue);
+                      setReportData(data);
+                    } catch (err) {
+                      setReportError(err.message);
+                    } finally {
+                      setReportLoading(false);
+                    }
+                  }}
+                  style={{ alignSelf: 'flex-end' }}
+                >
+                  {reportLoading ? 'Consultando...' : 'Generar informe'}
+                </button>
+              </div>
+
+              {reportError && <p style={{ color: '#dc2626', marginBottom: '1rem' }}>{reportError}</p>}
+
+              {reportLoading && (
+                <div className="spinner-wrapper"><div className="spinner" /><span>Generando informe...</span></div>
+              )}
+
+              {/* Resultado: todas las empresas */}
+              {reportData && reportData.byCompany && (
+                <div style={{ background: 'var(--surface-color)', borderRadius: '1rem', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+                  <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)' }}>
+                    <strong>Tickets por empresa — últimos {reportValue} {reportPeriod === 'day' ? 'días' : reportPeriod === 'month' ? 'meses' : 'años'}</strong>
+                  </div>
+                  <table className="data-table" style={{ margin: 0 }}>
+                    <thead>
+                      <tr>
+                        <th>Empresa</th>
+                        <th style={{ textAlign: 'center' }}>Total</th>
+                        <th style={{ textAlign: 'center' }}>Pendientes</th>
+                        <th style={{ textAlign: 'center' }}>En Proceso</th>
+                        <th style={{ textAlign: 'center' }}>En Revisión</th>
+                        <th style={{ textAlign: 'center' }}>Enviados</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reportData.byCompany.length === 0 && (
+                        <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>Sin resultados para el período seleccionado.</td></tr>
+                      )}
+                      {reportData.byCompany.map(row => (
+                        <tr key={row.id}>
+                          <td style={{ fontWeight: '500' }}>{row.company_name}</td>
+                          <td style={{ textAlign: 'center' }}><span className="count-badge" style={{ background: '#e0e7ff', color: '#3730a3', minWidth: '28px', display: 'inline-block' }}>{row.total}</span></td>
+                          <td style={{ textAlign: 'center' }}><span className="count-badge status-pending">{row.pending || 0}</span></td>
+                          <td style={{ textAlign: 'center' }}><span className="count-badge status-progress">{row.in_progress || 0}</span></td>
+                          <td style={{ textAlign: 'center' }}><span className="count-badge status-review">{row.in_review || 0}</span></td>
+                          <td style={{ textAlign: 'center' }}><span className="count-badge status-done">{row.sent || 0}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Resultado: empresa específica */}
+              {reportData && reportData.summary && (
+                <>
+                  {/* Tarjetas resumen */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                    {[
+                      { label: 'Total', value: reportData.summary.total, bg: '#e0e7ff', color: '#3730a3' },
+                      { label: 'Pendientes', value: reportData.summary.pending || 0, bg: '#fee2e2', color: '#b91c1c' },
+                      { label: 'En Proceso', value: reportData.summary.in_progress || 0, bg: '#fef3c7', color: '#b45309' },
+                      { label: 'En Revisión', value: reportData.summary.in_review || 0, bg: '#ede9fe', color: '#6d28d9' },
+                      { label: 'Enviados', value: reportData.summary.sent || 0, bg: '#d1fae5', color: '#065f46' },
+                    ].map(card => (
+                      <div key={card.label} style={{ background: card.bg, borderRadius: '1rem', padding: '1.25rem', textAlign: 'center' }}>
+                        <div style={{ fontSize: '2rem', fontWeight: '700', color: card.color }}>{card.value}</div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: '600', color: card.color, marginTop: '0.25rem' }}>{card.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Tabla detalle */}
+                  <div style={{ background: 'var(--surface-color)', borderRadius: '1rem', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+                    <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)' }}>
+                      <strong>Detalle de tickets — últimos {reportValue} {reportPeriod === 'day' ? 'días' : reportPeriod === 'month' ? 'meses' : 'años'}</strong>
+                    </div>
+                    <table className="data-table" style={{ margin: 0 }}>
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Asunto</th>
+                          <th>Asignado a</th>
+                          <th>Fecha</th>
+                          <th>Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportData.tickets.length === 0 && (
+                          <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>Sin tickets en el período seleccionado.</td></tr>
+                        )}
+                        {reportData.tickets.map(t => {
+                          const st = getStatusInfo(t.status);
+                          return (
+                            <tr key={t.id}>
+                              <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>#{t.id}</td>
+                              <td style={{ fontWeight: '500' }}>{t.title}</td>
+                              <td style={{ color: 'var(--text-muted)' }}>{t.assigned_name || t.assigned_email || 'Sin asignar'}</td>
+                              <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{new Date(t.created_at).toLocaleDateString('es-CO')}</td>
+                              <td><span className={`count-badge ${st.cls}`}>{st.text}</span></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
