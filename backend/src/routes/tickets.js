@@ -8,7 +8,7 @@ router.get('/', auth, async (req, res) => {
   const { company_id } = req.query;
   try {
     const [rows] = await db.query(
-      'SELECT t.*, u.email as assigned_email FROM tickets t LEFT JOIN users u ON t.assigned_to = u.id WHERE t.company_id = ? ORDER BY t.created_at DESC',
+      'SELECT t.*, u.email as assigned_email, u.name as assigned_name FROM tickets t LEFT JOIN users u ON t.assigned_to = u.id WHERE t.company_id = ? ORDER BY t.created_at DESC',
       [company_id]
     );
     res.json(rows);

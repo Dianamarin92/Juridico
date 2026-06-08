@@ -215,7 +215,7 @@ export default function App() {
     try {
       await api.updateTicket(selectedTicket.id, { status: selectedTicket.status, assigned_to: newAssignedId || null });
       const lawyer = lawyers.find(l => l.id === parseInt(newAssignedId));
-      setSelectedTicket(prev => ({ ...prev, assigned_to: newAssignedId || null, assigned_email: lawyer?.email || null }));
+      setSelectedTicket(prev => ({ ...prev, assigned_to: newAssignedId || null, assigned_email: lawyer?.email || null, assigned_name: lawyer?.name || null }));
       setTickets(await api.getTickets(selectedCompany.id));
     } catch (err) {
       setError(err.message);
@@ -1117,7 +1117,7 @@ export default function App() {
                                 <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                                   {ticket.is_new ? <span className="alert-dot" title="Ticket nuevo" /> : null}#{ticket.id}
                                 </td>
-                                <td style={{ color: 'var(--text-muted)' }}>{ticket.assigned_email || 'Sin asignar'}</td>
+                                <td style={{ color: 'var(--text-muted)' }}>{ticket.assigned_name || ticket.assigned_email || 'Sin asignar'}</td>
                                 <td style={{ fontWeight: ticket.is_new ? '700' : '500', color: 'var(--primary-color)' }}>{ticket.title}</td>
                                 <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{new Date(ticket.created_at).toLocaleDateString('es-CO')}</td>
                                 <td><span className={`count-badge ${status.cls}`}>{status.text}</span></td>
@@ -1229,7 +1229,7 @@ export default function App() {
                           >
                             <option value="">Sin asignar</option>
                             {lawyers.map(l => (
-                              <option key={l.id} value={l.id}>{l.email}</option>
+                              <option key={l.id} value={l.id}>{l.name || l.email}</option>
                             ))}
                           </select>
                         </div>
