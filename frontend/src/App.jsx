@@ -833,7 +833,7 @@ export default function App() {
                               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                                 <span style={{ background: est.bg, color: est.color, padding: '0.2rem 0.65rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '700' }}>{est.text}</span>
                                 <span style={{ background: pri.bg, color: pri.color, padding: '0.2rem 0.65rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600' }}>Prioridad {pri.text}</span>
-                                {t.fecha && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(t.fecha + 'T12:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
+                                {t.fecha && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(String(t.fecha).slice(0, 10) + 'T12:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
                               </div>
                               <p style={{ margin: '0 0 0.4rem', fontWeight: '600', fontSize: '1rem', color: 'var(--primary-color)' }}>{t.tarea}</p>
                               {t.cliente_proceso && <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Cliente / Proceso: <strong style={{ color: 'var(--text-color)' }}>{t.cliente_proceso}</strong></p>}
