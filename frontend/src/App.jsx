@@ -79,6 +79,7 @@ export default function App() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask]       = useState(null);
   const [taskForm, setTaskForm]             = useState(TASK_EMPTY);
+  const [taskFilesMap, setTaskFilesMap]     = useState({});
 
   const chatEndRef = useRef(null);
 
@@ -550,7 +551,13 @@ export default function App() {
             <div className={`nav-link ${currentView === 'tasks' ? 'active' : ''}`} onClick={async () => {
               setCurrentView('tasks');
               setTasksLoading(true);
-              try { setTasks(await api.getTasks()); } catch { } finally { setTasksLoading(false); }
+              try {
+                const [t, f] = await Promise.all([api.getTasks(), api.getAllTaskFiles()]);
+                setTasks(t);
+                const map = {};
+                f.forEach(file => { if (!map[file.task_id]) map[file.task_id] = []; map[file.task_id].push(file); });
+                setTaskFilesMap(map);
+              } catch { } finally { setTasksLoading(false); }
             }}>
               Tareas Pendientes
             </div>
@@ -849,6 +856,53 @@ export default function App() {
                               <button className="btn-secondary" style={{ padding: '0.4rem 0.9rem', fontSize: '0.8rem' }} onClick={() => openEdit(t)}>Modificar</button>
                               <button onClick={() => handleDeleteTask(t)} style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem', background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', borderRadius: '0.5rem', cursor: 'pointer' }}>Eliminar</button>
                             </div>
+                          </div>
+
+                          {/* ADJUNTOS DE TAREA */}
+                          <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>Adjuntos</span>
+                              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.75rem', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '0.5rem', fontSize: '0.8rem', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                                📎 Subir archivo
+                                <input type="file" hidden onChange={async (e) => {
+                                  const file = e.target.files[0];
+                                  if (!file) return;
+                                  setBusy(true);
+                                  try {
+                                    const res = await api.uploadTaskFile(t.id, file);
+                                    setTaskFilesMap(prev => ({
+                                      ...prev,
+                                      [t.id]: [{ id: res.id, filename: res.filename, path: res.path, task_id: t.id }, ...(prev[t.id] || [])]
+                                    }));
+                                  } catch (err) { setError(err.message); }
+                                  finally { setBusy(false); e.target.value = ''; }
+                                }} />
+                              </label>
+                            </div>
+                            {(taskFilesMap[t.id] || []).length > 0 && (
+                              <div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                {(taskFilesMap[t.id] || []).map(f => {
+                                  const BASE_URL = import.meta.env.VITE_API_URL;
+                                  const url = `${BASE_URL}${f.path}`;
+                                  return (
+                                    <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.65rem', background: 'var(--bg-color)', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontSize: '0.8rem' }}>
+                                      <a href={url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-color)', textDecoration: 'none', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        📄 {f.filename}
+                                      </a>
+                                      <button onClick={async () => {
+                                        if (!window.confirm('¿Eliminar este archivo?')) return;
+                                        setBusy(true);
+                                        try {
+                                          await api.deleteFile(f.id);
+                                          setTaskFilesMap(prev => ({ ...prev, [t.id]: prev[t.id].filter(x => x.id !== f.id) }));
+                                        } catch (err) { setError(err.message); }
+                                        finally { setBusy(false); }
+                                      }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#b91c1c', fontSize: '0.9rem', padding: '0', lineHeight: 1 }}>×</button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );

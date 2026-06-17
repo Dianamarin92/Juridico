@@ -88,6 +88,18 @@ export const updateTask = (id, data) =>
   request(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteTask = (id) =>
   request(`/tasks/${id}`, { method: 'DELETE' });
+export const getAllTaskFiles = () => request('/files?all_tasks=1');
+export const uploadTaskFile = (task_id, file) => {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('task_id', task_id);
+  const token = localStorage.getItem('token');
+  return fetch(`${BASE}/files/upload`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  }).then((r) => r.json());
+};
 
 // Archivos de tickets
 export const getFiles = (ticket_id) => request(`/files?ticket_id=${ticket_id}`);
