@@ -10,6 +10,7 @@ const messagesRoutes = require('./src/routes/messages');
 const filesRoutes = require('./src/routes/files');
 const usersRoutes = require('./src/routes/users');
 const reportsRoutes = require('./src/routes/reports');
+const tasksRoutes   = require('./src/routes/tasks');
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/messages', messagesRoutes);
 app.use('/files', filesRoutes);
 app.use('/users', usersRoutes);
 app.use('/reports', reportsRoutes);
+app.use('/tasks', tasksRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

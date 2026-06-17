@@ -80,6 +80,15 @@ export const getTicketReport = (company_id, period, value) => {
   return request(`/reports/tickets?${params}`);
 };
 
+// Tareas Pendientes
+export const getTasks = () => request('/tasks');
+export const createTask = (data) =>
+  request('/tasks', { method: 'POST', body: JSON.stringify(data) });
+export const updateTask = (id, data) =>
+  request(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteTask = (id) =>
+  request(`/tasks/${id}`, { method: 'DELETE' });
+
 // Archivos de tickets
 export const getFiles = (ticket_id) => request(`/files?ticket_id=${ticket_id}`);
 export const deleteFile = (id) => request(`/files/${id}`, { method: 'DELETE' });

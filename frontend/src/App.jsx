@@ -73,6 +73,13 @@ export default function App() {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError]     = useState('');
 
+  const TASK_EMPTY = { fecha: '', cliente_proceso: '', tarea: '', responsable: '', observaciones: '', link_revision: '', prioridad: 'media', estado: 'pendiente' };
+  const [tasks, setTasks]                   = useState([]);
+  const [tasksLoading, setTasksLoading]     = useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [editingTask, setEditingTask]       = useState(null);
+  const [taskForm, setTaskForm]             = useState(TASK_EMPTY);
+
   const chatEndRef = useRef(null);
 
   const isLoggedIn = !!user;
@@ -105,6 +112,7 @@ export default function App() {
         .catch(() => setError('Error al cargar empresas'));
       api.getUsers().then(setLawyers).catch(() => {});
       api.getStorage().then(setStorageInfo).catch(() => {});
+      api.getTasks().then(setTasks).catch(() => {});
     }
   }, [isLoggedIn]);
 
@@ -539,6 +547,13 @@ export default function App() {
                 Usuarios del Sistema
               </div>
             )}
+            <div className={`nav-link ${currentView === 'tasks' ? 'active' : ''}`} onClick={async () => {
+              setCurrentView('tasks');
+              setTasksLoading(true);
+              try { setTasks(await api.getTasks()); } catch { } finally { setTasksLoading(false); }
+            }}>
+              Tareas Pendientes
+            </div>
             <div className={`nav-link ${currentView === 'adminProfile' ? 'active' : ''}`} onClick={() => { setAdminPassword(''); setCurrentView('adminProfile'); }}>
               Mi Perfil
             </div>
@@ -736,6 +751,172 @@ export default function App() {
               </div>
             </div>
           )}
+
+          {/* TAREAS PENDIENTES */}
+          {currentView === 'tasks' && !isCliente && (() => {
+            const ESTADO_INFO = {
+              pendiente:  { text: 'Pendiente',  bg: '#fee2e2', color: '#b91c1c' },
+              terminada:  { text: 'Terminada',  bg: '#dcfce7', color: '#15803d' },
+              contestada: { text: 'Contestada', bg: '#dbeafe', color: '#1d4ed8' },
+            };
+            const PRIORIDAD_INFO = {
+              alta:  { text: 'Alta',  bg: '#fee2e2', color: '#b91c1c' },
+              media: { text: 'Media', bg: '#fef9c3', color: '#92400e' },
+              baja:  { text: 'Baja',  bg: '#f3f4f6', color: '#6b7280' },
+            };
+            const openNew = () => { setEditingTask(null); setTaskForm(TASK_EMPTY); setIsTaskModalOpen(true); };
+            const openEdit = (t) => {
+              setEditingTask(t);
+              setTaskForm({
+                fecha: t.fecha ? t.fecha.split('T')[0] : '',
+                cliente_proceso: t.cliente_proceso || '',
+                tarea: t.tarea || '',
+                responsable: t.responsable || '',
+                observaciones: t.observaciones || '',
+                link_revision: t.link_revision || '',
+                prioridad: t.prioridad || 'media',
+                estado: t.estado || 'pendiente',
+              });
+              setIsTaskModalOpen(true);
+            };
+            const handleSubmitTask = async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              try {
+                if (editingTask) {
+                  await api.updateTask(editingTask.id, taskForm);
+                  setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...taskForm } : t));
+                } else {
+                  const created = await api.createTask(taskForm);
+                  setTasks(prev => [created, ...prev]);
+                }
+                setIsTaskModalOpen(false);
+              } catch (err) { setError(err.message); }
+              finally { setBusy(false); }
+            };
+            const handleDeleteTask = async (t) => {
+              if (!window.confirm(`¿Eliminar la tarea "${t.tarea}"?`)) return;
+              setBusy(true);
+              try {
+                await api.deleteTask(t.id);
+                setTasks(prev => prev.filter(x => x.id !== t.id));
+              } catch (err) { setError(err.message); }
+              finally { setBusy(false); }
+            };
+            const inputStyle = { width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem', boxSizing: 'border-box' };
+            const labelStyle = { display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' };
+            return (
+              <>
+                <div className="view-header" style={{ marginBottom: '1.5rem' }}>
+                  <div>
+                    <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Tareas Pendientes</h1>
+                    <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Control de tareas y seguimiento de procesos.</p>
+                  </div>
+                  <button className="btn-primary" onClick={openNew}>+ Nueva Tarea</button>
+                </div>
+
+                {tasksLoading ? (
+                  <div className="spinner-wrapper"><div className="spinner" /><span>Cargando tareas...</span></div>
+                ) : tasks.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', background: 'var(--surface-color)', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                    No hay tareas registradas. Crea la primera con el botón "Nueva Tarea".
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {tasks.map(t => {
+                      const est = ESTADO_INFO[t.estado] || ESTADO_INFO.pendiente;
+                      const pri = PRIORIDAD_INFO[t.prioridad] || PRIORIDAD_INFO.media;
+                      return (
+                        <div key={t.id} style={{ background: 'var(--surface-color)', borderRadius: '1rem', border: '1px solid var(--border-color)', padding: '1.25rem 1.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: '200px' }}>
+                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                                <span style={{ background: est.bg, color: est.color, padding: '0.2rem 0.65rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '700' }}>{est.text}</span>
+                                <span style={{ background: pri.bg, color: pri.color, padding: '0.2rem 0.65rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600' }}>Prioridad {pri.text}</span>
+                                {t.fecha && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(t.fecha + 'T12:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
+                              </div>
+                              <p style={{ margin: '0 0 0.4rem', fontWeight: '600', fontSize: '1rem', color: 'var(--primary-color)' }}>{t.tarea}</p>
+                              {t.cliente_proceso && <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Cliente / Proceso: <strong style={{ color: 'var(--text-color)' }}>{t.cliente_proceso}</strong></p>}
+                              {t.responsable && <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Responsable: <strong style={{ color: 'var(--text-color)' }}>{t.responsable}</strong></p>}
+                              {t.observaciones && <p style={{ margin: '0.4rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>{t.observaciones}</p>}
+                              {t.link_revision && (
+                                <a href={t.link_revision} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--accent-color)', textDecoration: 'none' }}>
+                                  🔗 Ver revisión
+                                </a>
+                              )}
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignSelf: 'flex-start', flexShrink: 0 }}>
+                              <button className="btn-secondary" style={{ padding: '0.4rem 0.9rem', fontSize: '0.8rem' }} onClick={() => openEdit(t)}>Modificar</button>
+                              <button onClick={() => handleDeleteTask(t)} style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem', background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', borderRadius: '0.5rem', cursor: 'pointer' }}>Eliminar</button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* MODAL TAREA */}
+                {isTaskModalOpen && (
+                  <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+                    <div style={{ backgroundColor: 'var(--surface-color)', padding: '2rem', borderRadius: '1rem', width: '600px', maxWidth: '95%', maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--border-color)' }}>
+                      <h2 style={{ marginTop: 0, color: 'var(--primary-color)' }}>{editingTask ? 'Modificar Tarea' : 'Nueva Tarea'}</h2>
+                      <form onSubmit={handleSubmitTask} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                          <div>
+                            <label style={labelStyle}>Fecha</label>
+                            <input type="date" value={taskForm.fecha} onChange={e => setTaskForm(p => ({ ...p, fecha: e.target.value }))} style={inputStyle} />
+                          </div>
+                          <div>
+                            <label style={labelStyle}>Cliente / Proceso</label>
+                            <input type="text" value={taskForm.cliente_proceso} onChange={e => setTaskForm(p => ({ ...p, cliente_proceso: e.target.value }))} placeholder="Ej. Inversiones Radical" style={inputStyle} />
+                          </div>
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Tarea <span style={{ color: '#b91c1c' }}>*</span></label>
+                          <input type="text" value={taskForm.tarea} onChange={e => setTaskForm(p => ({ ...p, tarea: e.target.value }))} placeholder="Descripción de la tarea" style={inputStyle} required />
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Responsable</label>
+                          <input type="text" value={taskForm.responsable} onChange={e => setTaskForm(p => ({ ...p, responsable: e.target.value }))} placeholder="Ej. Estiven Marín" style={inputStyle} />
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Observaciones</label>
+                          <textarea value={taskForm.observaciones} onChange={e => setTaskForm(p => ({ ...p, observaciones: e.target.value }))} placeholder="Notas adicionales..." rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Link de Revisión</label>
+                          <input type="url" value={taskForm.link_revision} onChange={e => setTaskForm(p => ({ ...p, link_revision: e.target.value }))} placeholder="https://docs.google.com/..." style={inputStyle} />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                          <div>
+                            <label style={labelStyle}>Prioridad</label>
+                            <select value={taskForm.prioridad} onChange={e => setTaskForm(p => ({ ...p, prioridad: e.target.value }))} style={inputStyle}>
+                              <option value="alta">Alta</option>
+                              <option value="media">Media</option>
+                              <option value="baja">Baja</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label style={labelStyle}>Estado</label>
+                            <select value={taskForm.estado} onChange={e => setTaskForm(p => ({ ...p, estado: e.target.value }))} style={inputStyle}>
+                              <option value="pendiente">Pendiente</option>
+                              <option value="terminada">Terminada</option>
+                              <option value="contestada">Contestada</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                          <button type="button" className="btn-secondary" onClick={() => setIsTaskModalOpen(false)}>Cancelar</button>
+                          <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Guardando...' : editingTask ? 'Guardar Cambios' : 'Crear Tarea'}</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
 
           {/* INFORMES */}
           {currentView === 'reports' && (
