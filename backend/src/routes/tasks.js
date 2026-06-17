@@ -11,7 +11,11 @@ router.get('/', auth, async (req, res) => {
       `SELECT t.*, u.name as created_by_name
        FROM tasks t
        LEFT JOIN users u ON t.created_by = u.id
-       ORDER BY t.fecha IS NULL, t.fecha ASC, t.created_at DESC`
+       ORDER BY
+         FIELD(t.estado, 'pendiente', 'contestada', 'terminada'),
+         t.fecha IS NULL,
+         t.fecha ASC,
+         t.created_at DESC`
     );
     res.json(rows);
   } catch (err) {
