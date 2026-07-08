@@ -416,6 +416,69 @@ export default function App() {
     }
   };
 
+  const downloadTicketAsWord = (ticket, company, msgs) => {
+    const fecha = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
+    const fechaTicket = new Date(ticket.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
+    const row = (label, value) => `
+      <tr>
+        <td style="padding:7px 16px 7px 0;font-weight:bold;color:#555;width:140px;vertical-align:top;">${label}</td>
+        <td style="padding:7px 0;color:#111;">${value || '—'}</td>
+      </tr>`;
+    const statusMap = { pending: 'Pendiente', progress: 'En Proceso', review: 'En Revisión', done: 'Enviado' };
+    const mensajesHtml = msgs.length === 0
+      ? '<p style="color:#888;">Sin mensajes en el hilo.</p>'
+      : msgs.map(m => `
+          <div style="margin-bottom:16px;padding:12px 16px;background:#f9fafb;border-left:4px solid #b91c1c;border-radius:4px;">
+            <div style="font-size:10pt;color:#b91c1c;font-weight:bold;margin-bottom:4px;">${m.sender_email || 'Usuario'}</div>
+            <div style="font-size:11pt;color:#111;line-height:1.5;">${m.content}</div>
+          </div>`).join('');
+    const html = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office'
+            xmlns:w='urn:schemas-microsoft-com:office:word'
+            xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset='utf-8'>
+        <style>
+          body { font-family: Calibri, Arial, sans-serif; margin: 2cm; color: #111; }
+          h1 { color: #b91c1c; font-size: 18pt; margin-bottom: 4px; }
+          h2 { color: #1a1a1a; font-size: 13pt; margin: 24px 0 10px; border-bottom: 2px solid #b91c1c; padding-bottom: 4px; }
+          table { border-collapse: collapse; width: 100%; }
+        </style>
+      </head>
+      <body>
+        <h1>Marín &amp; Abogados</h1>
+        <p style="color:#888;font-size:10pt;margin-top:0;">Documento generado el ${fecha}</p>
+
+        <h2>Datos de la Empresa</h2>
+        <table>
+          ${row('Nombre', company?.name)}
+          ${row('NIT', company?.nit)}
+          ${row('Contacto', company?.contact_name)}
+          ${row('Teléfono', company?.phone)}
+          ${row('Correo', company?.email)}
+        </table>
+
+        <h2>Información del Ticket</h2>
+        <table>
+          ${row('Ref.', `#${ticket.id}`)}
+          ${row('Asunto', ticket.title)}
+          ${row('Estado', statusMap[ticket.status] || ticket.status)}
+          ${row('Fecha', fechaTicket)}
+        </table>
+
+        <h2>Hilo de Comunicación</h2>
+        ${mensajesHtml}
+      </body>
+      </html>`;
+
+    const blob = new Blob([html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Ticket_${ticket.id}_${(company?.name || 'empresa').replace(/\s+/g, '_')}.doc`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const downloadCompanyAsWord = (company) => {
     const fecha = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
     const row = (label, value) => `
@@ -1693,7 +1756,16 @@ export default function App() {
                   {/* PANEL LATERAL */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
-                      <h3 style={{ marginTop: 0 }}>Información</h3>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <h3 style={{ margin: 0 }}>Información</h3>
+                        <button
+                          className="btn-secondary"
+                          style={{ padding: '0.3rem 0.75rem', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
+                          onClick={() => downloadTicketAsWord(selectedTicket, selectedCompany, messages)}
+                        >
+                          ⬇ Descargar
+                        </button>
+                      </div>
                       <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0.25rem 0' }}>
                         <strong>Estado:</strong>{' '}
                         <span className={`count-badge ${getStatusInfo(selectedTicket.status).cls}`} style={{ display: 'inline-flex', marginLeft: '0.5rem' }}>
