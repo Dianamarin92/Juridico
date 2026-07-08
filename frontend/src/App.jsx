@@ -416,6 +416,58 @@ export default function App() {
     }
   };
 
+  const downloadCompanyAsWord = (company) => {
+    const fecha = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
+    const row = (label, value) => `
+      <tr>
+        <td style="padding:8px 16px 8px 0;font-weight:bold;color:#555;width:140px;vertical-align:top;">${label}</td>
+        <td style="padding:8px 0;color:#111;">${value || '—'}</td>
+      </tr>`;
+    const html = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office'
+            xmlns:w='urn:schemas-microsoft-com:office:word'
+            xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset='utf-8'>
+        <style>
+          body { font-family: Calibri, Arial, sans-serif; margin: 2cm; color: #111; }
+          h1 { color: #b91c1c; font-size: 20pt; margin-bottom: 4px; }
+          h2 { color: #1a1a1a; font-size: 13pt; margin: 24px 0 8px; border-bottom: 2px solid #b91c1c; padding-bottom: 4px; }
+          table { border-collapse: collapse; width: 100%; }
+          .badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 10pt; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <h1>Marín &amp; Abogados</h1>
+        <p style="color:#888;font-size:10pt;margin-top:0;">Documento generado el ${fecha}</p>
+
+        <h2>Datos de la Empresa</h2>
+        <table>
+          ${row('Nombre', company.name)}
+          ${row('NIT', company.nit)}
+          ${row('Contacto', company.contact_name)}
+          ${row('Teléfono', company.phone)}
+          ${row('Correo', company.email)}
+        </table>
+
+        <h2>Resumen de Tickets</h2>
+        <table>
+          ${row('Pendientes', company.pending_count || 0)}
+          ${row('En Proceso', company.progress_count || 0)}
+          ${row('En Revisión', company.review_count || 0)}
+          ${row('Enviados', company.done_count || 0)}
+        </table>
+      </body>
+      </html>`;
+
+    const blob = new Blob([html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${company.name.replace(/\s+/g, '_')}_datos.doc`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const formatBytes = (bytes) => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -1315,10 +1367,16 @@ export default function App() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                         <h3 style={{ margin: 0, color: 'var(--primary-color)', fontSize: '1rem' }}>Datos de la Empresa</h3>
                         {!editingProfileCompany && (
-                          <button className="btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.8rem' }}
-                            onClick={() => { setProfileCompanyEdit({ name: profileCompany.name || '', nit: profileCompany.nit || '', contact_name: profileCompany.contact_name || '', phone: profileCompany.phone || '', email: profileCompany.email || '' }); setEditingProfileCompany(true); }}>
-                            ✏ Editar
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button className="btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.8rem' }}
+                              onClick={() => downloadCompanyAsWord(profileCompany)}>
+                              ⬇ Descargar
+                            </button>
+                            <button className="btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.8rem' }}
+                              onClick={() => { setProfileCompanyEdit({ name: profileCompany.name || '', nit: profileCompany.nit || '', contact_name: profileCompany.contact_name || '', phone: profileCompany.phone || '', email: profileCompany.email || '' }); setEditingProfileCompany(true); }}>
+                              ✏ Editar
+                            </button>
+                          </div>
                         )}
                       </div>
                       {editingProfileCompany ? (
