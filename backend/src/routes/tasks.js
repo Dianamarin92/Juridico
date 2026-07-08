@@ -13,8 +13,8 @@ router.get('/', auth, async (req, res) => {
        LEFT JOIN users u ON t.created_by = u.id
        ORDER BY
          FIELD(t.estado, 'pendiente', 'contestada', 'terminada'),
-         t.fecha IS NULL,
-         t.fecha ASC,
+         t.fecha_inicio IS NULL,
+         t.fecha_inicio ASC,
          t.created_at DESC`
     );
     res.json(rows);
@@ -26,13 +26,13 @@ router.get('/', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   if (req.user.role === 'cliente') return res.status(403).json({ error: 'Sin permisos' });
-  const { fecha, cliente_proceso, tarea, responsable, observaciones, link_revision, prioridad, estado } = req.body;
+  const { fecha_inicio, fecha_fin, cliente_proceso, tarea, responsable, observaciones, link_revision, prioridad, estado } = req.body;
   if (!tarea || !tarea.trim()) return res.status(400).json({ error: 'La tarea es requerida' });
   try {
     const [result] = await db.query(
-      `INSERT INTO tasks (fecha, cliente_proceso, tarea, responsable, observaciones, link_revision, prioridad, estado, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [fecha || null, cliente_proceso || null, tarea.trim(), responsable || null, observaciones || null, link_revision || null, prioridad || 'media', estado || 'pendiente', req.user.id]
+      `INSERT INTO tasks (fecha_inicio, fecha_fin, cliente_proceso, tarea, responsable, observaciones, link_revision, prioridad, estado, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [fecha_inicio || null, fecha_fin || null, cliente_proceso || null, tarea.trim(), responsable || null, observaciones || null, link_revision || null, prioridad || 'media', estado || 'pendiente', req.user.id]
     );
     const [rows] = await db.query('SELECT * FROM tasks WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
@@ -44,13 +44,13 @@ router.post('/', auth, async (req, res) => {
 
 router.put('/:id', auth, async (req, res) => {
   if (req.user.role === 'cliente') return res.status(403).json({ error: 'Sin permisos' });
-  const { fecha, cliente_proceso, tarea, responsable, observaciones, link_revision, prioridad, estado } = req.body;
+  const { fecha_inicio, fecha_fin, cliente_proceso, tarea, responsable, observaciones, link_revision, prioridad, estado } = req.body;
   if (!tarea || !tarea.trim()) return res.status(400).json({ error: 'La tarea es requerida' });
   try {
     await db.query(
-      `UPDATE tasks SET fecha=?, cliente_proceso=?, tarea=?, responsable=?, observaciones=?, link_revision=?, prioridad=?, estado=?
+      `UPDATE tasks SET fecha_inicio=?, fecha_fin=?, cliente_proceso=?, tarea=?, responsable=?, observaciones=?, link_revision=?, prioridad=?, estado=?
        WHERE id=?`,
-      [fecha || null, cliente_proceso || null, tarea.trim(), responsable || null, observaciones || null, link_revision || null, prioridad || 'media', estado || 'pendiente', req.params.id]
+      [fecha_inicio || null, fecha_fin || null, cliente_proceso || null, tarea.trim(), responsable || null, observaciones || null, link_revision || null, prioridad || 'media', estado || 'pendiente', req.params.id]
     );
     res.json({ ok: true });
   } catch (err) {

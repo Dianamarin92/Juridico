@@ -73,7 +73,7 @@ export default function App() {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError]     = useState('');
 
-  const TASK_EMPTY = { fecha: '', cliente_proceso: '', tarea: '', responsable: '', observaciones: '', link_revision: '', prioridad: 'media', estado: 'pendiente' };
+  const TASK_EMPTY = { fecha_inicio: '', fecha_fin: '', cliente_proceso: '', tarea: '', responsable: '', observaciones: '', link_revision: '', prioridad: 'media', estado: 'pendiente' };
   const [tasks, setTasks]                   = useState([]);
   const [tasksLoading, setTasksLoading]     = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -775,7 +775,8 @@ export default function App() {
             const openEdit = (t) => {
               setEditingTask(t);
               setTaskForm({
-                fecha: t.fecha ? t.fecha.split('T')[0] : '',
+                fecha_inicio: t.fecha_inicio ? String(t.fecha_inicio).slice(0, 10) : '',
+                fecha_fin:    t.fecha_fin    ? String(t.fecha_fin).slice(0, 10)    : '',
                 cliente_proceso: t.cliente_proceso || '',
                 tarea: t.tarea || '',
                 responsable: t.responsable || '',
@@ -840,7 +841,13 @@ export default function App() {
                               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                                 <span style={{ background: est.bg, color: est.color, padding: '0.2rem 0.65rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '700' }}>{est.text}</span>
                                 <span style={{ background: pri.bg, color: pri.color, padding: '0.2rem 0.65rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600' }}>Prioridad {pri.text}</span>
-                                {t.fecha && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(String(t.fecha).slice(0, 10) + 'T12:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
+                                {(t.fecha_inicio || t.fecha_fin) && (
+                                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                    {t.fecha_inicio ? new Date(String(t.fecha_inicio).slice(0,10)+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '?'}
+                                    {' → '}
+                                    {t.fecha_fin ? new Date(String(t.fecha_fin).slice(0,10)+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '?'}
+                                  </span>
+                                )}
                               </div>
                               <p style={{ margin: '0 0 0.4rem', fontWeight: '600', fontSize: '1rem', color: 'var(--primary-color)' }}>{t.tarea}</p>
                               {t.cliente_proceso && <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Cliente / Proceso: <strong style={{ color: 'var(--text-color)' }}>{t.cliente_proceso}</strong></p>}
@@ -918,13 +925,17 @@ export default function App() {
                       <form onSubmit={handleSubmitTask} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                           <div>
-                            <label style={labelStyle}>Fecha</label>
-                            <input type="date" value={taskForm.fecha} onChange={e => setTaskForm(p => ({ ...p, fecha: e.target.value }))} style={inputStyle} />
+                            <label style={labelStyle}>Fecha Inicio</label>
+                            <input type="date" value={taskForm.fecha_inicio} onChange={e => setTaskForm(p => ({ ...p, fecha_inicio: e.target.value }))} style={inputStyle} />
                           </div>
                           <div>
-                            <label style={labelStyle}>Cliente / Proceso</label>
-                            <input type="text" value={taskForm.cliente_proceso} onChange={e => setTaskForm(p => ({ ...p, cliente_proceso: e.target.value }))} placeholder="Ej. Inversiones Radical" style={inputStyle} />
+                            <label style={labelStyle}>Fecha Final</label>
+                            <input type="date" value={taskForm.fecha_fin} onChange={e => setTaskForm(p => ({ ...p, fecha_fin: e.target.value }))} style={inputStyle} />
                           </div>
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Cliente / Proceso</label>
+                          <input type="text" value={taskForm.cliente_proceso} onChange={e => setTaskForm(p => ({ ...p, cliente_proceso: e.target.value }))} placeholder="Ej. Inversiones Radical" style={inputStyle} />
                         </div>
                         <div>
                           <label style={labelStyle}>Tarea <span style={{ color: '#b91c1c' }}>*</span></label>
