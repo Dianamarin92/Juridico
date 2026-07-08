@@ -11,7 +11,6 @@ const filesRoutes = require('./src/routes/files');
 const usersRoutes = require('./src/routes/users');
 const reportsRoutes = require('./src/routes/reports');
 const tasksRoutes   = require('./src/routes/tasks');
-const { startTaskReminderJob } = require('./src/jobs/taskReminder');
 
 const app = express();
 
@@ -41,9 +40,12 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`API corriendo en puerto ${PORT}`);
   if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-    startTaskReminderJob();
-  } else {
-    console.warn('[taskReminder] EMAIL_USER o EMAIL_PASS no configurados — job desactivado');
+    try {
+      const { startTaskReminderJob } = require('./src/jobs/taskReminder');
+      startTaskReminderJob();
+    } catch (e) {
+      console.warn('[taskReminder] No se pudo iniciar el job (dependencias no instaladas):', e.message);
+    }
   }
 });
 
