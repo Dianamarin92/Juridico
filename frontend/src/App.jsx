@@ -653,7 +653,7 @@ export default function App() {
         {!isCliente ? (
           <>
             <div className={`nav-link ${currentView === 'dashboard' ? 'active' : ''}`} onClick={() => setCurrentView('dashboard')}>
-              Tickets empresas
+              Tickets Empresas
             </div>
             <div className={`nav-link ${currentView === 'companyProfiles' ? 'active' : ''}`} onClick={() => { setProfileCompany(null); setCurrentView('companyProfiles'); }}>
               Perfil Empresa
@@ -728,7 +728,7 @@ export default function App() {
             <>
               <div className="view-header">
                 <div>
-                  <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Tickets empresas</h1>
+                  <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Tickets Empresas</h1>
                   <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Estado general de casos por cliente.</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
