@@ -298,6 +298,49 @@
 }
 .land-oferta p { color: rgba(255,255,255,.78); font-style: italic; line-height: 1.75; }
 
+/* ── TEAM ─────────────────────────────────────────────── */
+.land-team-card {
+  display: flex;
+  gap: 2.5rem;
+  align-items: flex-start;
+  background: #f9f9f9;
+  border-radius: 12px;
+  padding: 2rem 2.5rem;
+  margin-top: 2.5rem;
+  border: 1px solid #e5e5e5;
+}
+.land-team-photo-wrap {
+  flex-shrink: 0;
+  width: 200px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+}
+.land-team-photo {
+  width: 100%;
+  display: block;
+}
+.land-team-name-bar {
+  background: #c0392b;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.land-team-name-bar strong { color: #fff; font-size: .95rem; }
+.land-team-name-bar span  { color: rgba(255,255,255,.8); font-size: .75rem; letter-spacing: .08em; }
+.land-team-bio { flex: 1; }
+.land-team-bio p {
+  color: var(--land-muted);
+  font-size: 1rem;
+  line-height: 1.8;
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .land-team-card { flex-direction: column; }
+  .land-team-photo-wrap { width: 100%; max-width: 280px; margin: 0 auto; }
+}
+
 /* ── SERVICES ────────────────────────────────────────── */
 .land-services { background: var(--land-dark); }
 .land-services-grid {

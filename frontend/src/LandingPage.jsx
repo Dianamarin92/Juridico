@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './landing.css';
+import estiven from './assets/estiven.jpg';
 
 export default function LandingPage({ onLogin }) {
   const [scrolled, setScrolled] = useState(false);
@@ -101,6 +102,29 @@ export default function LandingPage({ onLogin }) {
                 "Nuestro valor diferencial lo hace la cercanía que ofrecemos a nuestros clientes en el
                 servicio, el trato amable y horarios flexibles. Más que representar, respaldamos sus
                 decisiones. Nuestra honestidad y transparencia es nuestra mayor promesa."
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ABOGADO PRINCIPAL */}
+        <div className="land-container">
+          <div className="land-team-card">
+            <div className="land-team-photo-wrap">
+              <img src={estiven} alt="Estiven Marin Hoyos" className="land-team-photo" />
+              <div className="land-team-name-bar">
+                <strong>Estiven Marin Hoyos</strong>
+                <span>ABOGADO</span>
+              </div>
+            </div>
+            <div className="land-team-bio">
+              <p>
+                Abogado titulado y contador público titulado. Especialista y experto en derecho tributario
+                y derecho laboral y seguridad social, docente universitario, comprometido con el medio
+                ambiente y los procesos sostenibles. Se ha desempeñado en el campo del derecho de los
+                trabajadores; competencias profesionales en búsqueda de la excelencia y transferencia del
+                conocimiento, gran habilidad para relacionarse con las personas, con alto grado de
+                responsabilidad, competitividad y transparencia.
               </p>
             </div>
           </div>
