@@ -90,10 +90,7 @@ export default function LandingPage({ onLogin }) {
                 <strong>100%</strong>
                 <span>Compromiso ético</span>
               </div>
-              <div className="land-stat">
-                <strong>ISO</strong>
-                <span>En proceso 9001</span>
-              </div>
+
             </div>
           </div>
           <div className="land-about-card">
