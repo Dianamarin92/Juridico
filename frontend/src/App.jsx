@@ -928,9 +928,21 @@ export default function App() {
             };
             const inputStyle = { width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem', boxSizing: 'border-box' };
             const labelStyle = { display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' };
+            const [taskSearch, setTaskSearch] = React.useState('');
+            const filteredTasks = taskSearch.trim()
+              ? tasks.filter(t => {
+                  const q = taskSearch.toLowerCase();
+                  return (
+                    (t.tarea || '').toLowerCase().includes(q) ||
+                    (t.cliente_proceso || '').toLowerCase().includes(q) ||
+                    (t.responsable || '').toLowerCase().includes(q) ||
+                    (t.observaciones || '').toLowerCase().includes(q)
+                  );
+                })
+              : tasks;
             return (
               <>
-                <div className="view-header" style={{ marginBottom: '1.5rem' }}>
+                <div className="view-header" style={{ marginBottom: '1rem' }}>
                   <div>
                     <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Tareas Pendientes</h1>
                     <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Control de tareas y seguimiento de procesos.</p>
@@ -938,15 +950,25 @@ export default function App() {
                   <button className="btn-primary" onClick={openNew}>+ Nueva Tarea</button>
                 </div>
 
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <input
+                    type="text"
+                    placeholder="🔍 Buscar por tarea, cliente, responsable u observaciones..."
+                    value={taskSearch}
+                    onChange={e => setTaskSearch(e.target.value)}
+                    style={{ width: '100%', padding: '0.65rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem', boxSizing: 'border-box', background: 'var(--surface-color)', color: 'var(--text-color)' }}
+                  />
+                </div>
+
                 {tasksLoading ? (
                   <div className="spinner-wrapper"><div className="spinner" /><span>Cargando tareas...</span></div>
-                ) : tasks.length === 0 ? (
+                ) : filteredTasks.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', background: 'var(--surface-color)', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
-                    No hay tareas registradas. Crea la primera con el botón "Nueva Tarea".
+                    {taskSearch.trim() ? `No se encontraron tareas para "${taskSearch}".` : 'No hay tareas registradas. Crea la primera con el botón "Nueva Tarea".'}
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {tasks.map(t => {
+                    {filteredTasks.map(t => {
                       const est = ESTADO_INFO[t.estado] || ESTADO_INFO.pendiente;
                       const pri = PRIORIDAD_INFO[t.prioridad] || PRIORIDAD_INFO.media;
                       return (
