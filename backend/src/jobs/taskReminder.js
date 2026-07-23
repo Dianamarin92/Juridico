@@ -2,7 +2,7 @@ const cron = require('node-cron');
 const nodemailer = require('nodemailer');
 const db = require('../config/db');
 
-const DEST_EMAIL = 'dianamarin92@gmail.com';
+const DEST_EMAIL = 'abogadoemh@hotmail.com';
 
 function createTransporter() {
   return nodemailer.createTransport({
