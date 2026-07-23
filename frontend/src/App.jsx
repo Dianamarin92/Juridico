@@ -655,14 +655,6 @@ export default function App() {
             <div className={`nav-link ${currentView === 'dashboard' ? 'active' : ''}`} onClick={() => setCurrentView('dashboard')}>
               Tickets Empresas
             </div>
-            <div className={`nav-link ${currentView === 'companyProfiles' ? 'active' : ''}`} onClick={() => { setProfileCompany(null); setCurrentView('companyProfiles'); }}>
-              Perfil Empresa
-            </div>
-            {role === 'steven_marin' && (
-              <div className={`nav-link ${currentView === 'usersManagement' ? 'active' : ''}`} onClick={() => setCurrentView('usersManagement')}>
-                Usuarios del Sistema
-              </div>
-            )}
             <div className={`nav-link ${currentView === 'tasks' ? 'active' : ''}`} onClick={async () => {
               setCurrentView('tasks');
               setTasksLoading(true);
@@ -676,6 +668,14 @@ export default function App() {
             }}>
               Tareas Pendientes
             </div>
+            <div className={`nav-link ${currentView === 'companyProfiles' ? 'active' : ''}`} onClick={() => { setProfileCompany(null); setCurrentView('companyProfiles'); }}>
+              Perfil Empresa
+            </div>
+            {role === 'steven_marin' && (
+              <div className={`nav-link ${currentView === 'usersManagement' ? 'active' : ''}`} onClick={() => setCurrentView('usersManagement')}>
+                Usuarios del Sistema
+              </div>
+            )}
             <div className={`nav-link ${currentView === 'adminProfile' ? 'active' : ''}`} onClick={() => { setAdminPassword(''); setCurrentView('adminProfile'); }}>
               Mi Perfil
             </div>
