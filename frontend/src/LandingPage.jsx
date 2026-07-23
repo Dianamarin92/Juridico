@@ -49,7 +49,7 @@ export default function LandingPage({ onLogin }) {
           <p className="land-hero-tagline">Derecho Laboral · Seguridad Social · Consultoría Jurídica</p>
           <h1>Su salud legal,<br />tan importante como<br />su salud física.</h1>
           <p className="land-hero-sub">
-            Expertos en representación jurídica laboral y pensional para empresas y personas del Eje Cafetero.
+            Expertos en representación jurídica laboral y pensional para empresas y personas.
           </p>
           <div className="land-hero-actions">
             <button className="land-btn-primary" onClick={() => scrollTo('servicios')}>
@@ -257,7 +257,7 @@ export default function LandingPage({ onLogin }) {
                 <span>📍</span>
                 <div>
                   <strong>Ubicación</strong>
-                  <p>Pereira, Risaralda — Área Metropolitana Centro Occidente</p>
+                  <p>Calle 20 número 6-30 oficina 303 edificio banco ganadero</p>
                 </div>
               </div>
               <div className="land-contact-item">
