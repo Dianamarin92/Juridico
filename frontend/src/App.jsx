@@ -80,6 +80,7 @@ export default function App() {
   const [editingTask, setEditingTask]       = useState(null);
   const [taskForm, setTaskForm]             = useState(TASK_EMPTY);
   const [taskFilesMap, setTaskFilesMap]     = useState({});
+  const [taskSearch, setTaskSearch]         = useState('');
 
   const chatEndRef = useRef(null);
 
@@ -928,7 +929,6 @@ export default function App() {
             };
             const inputStyle = { width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem', boxSizing: 'border-box' };
             const labelStyle = { display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' };
-            const [taskSearch, setTaskSearch] = React.useState('');
             const filteredTasks = taskSearch.trim()
               ? tasks.filter(t => {
                   const q = taskSearch.toLowerCase();
