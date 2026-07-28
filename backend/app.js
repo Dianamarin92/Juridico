@@ -11,6 +11,7 @@ const filesRoutes = require('./src/routes/files');
 const usersRoutes = require('./src/routes/users');
 const reportsRoutes = require('./src/routes/reports');
 const tasksRoutes   = require('./src/routes/tasks');
+const contactRoutes = require('./src/routes/contact');
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/files', filesRoutes);
 app.use('/users', usersRoutes);
 app.use('/reports', reportsRoutes);
 app.use('/tasks', tasksRoutes);
+app.use('/contact', contactRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

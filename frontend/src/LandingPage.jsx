@@ -2,9 +2,35 @@ import React, { useState, useEffect } from 'react';
 import './landing.css';
 import estiven from './assets/estiven.jpg';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
 export default function LandingPage({ onLogin }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [contactForm, setContactForm] = useState({ nombre: '', correo: '', empresa: '', servicio: '', mensaje: '' });
+  const [contactSending, setContactSending] = useState(false);
+  const [contactSent, setContactSent] = useState(false);
+  const [contactError, setContactError] = useState('');
+
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setContactSending(true);
+    setContactError('');
+    try {
+      const res = await fetch(`${API_URL}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contactForm),
+      });
+      if (!res.ok) throw new Error();
+      setContactSent(true);
+      setContactForm({ nombre: '', correo: '', empresa: '', servicio: '', mensaje: '' });
+    } catch {
+      setContactError('No se pudo enviar el mensaje. Por favor inténtelo de nuevo.');
+    } finally {
+      setContactSending(false);
+    }
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -289,6 +315,13 @@ export default function LandingPage({ onLogin }) {
                 </div>
               </div>
               <div className="land-contact-item">
+                <span>📞</span>
+                <div>
+                  <strong>Teléfono</strong>
+                  <p>323 300 4305</p>
+                </div>
+              </div>
+              <div className="land-contact-item">
                 <span>🔐</span>
                 <div>
                   <strong>Portal de Clientes</strong>
@@ -302,22 +335,53 @@ export default function LandingPage({ onLogin }) {
           </div>
           <div className="land-contact-card">
             <h3>Solicitar Información</h3>
-            <form className="land-form" onSubmit={e => { e.preventDefault(); alert('Mensaje enviado. Le contactaremos pronto.'); }}>
-              <input type="text" placeholder="Nombre completo" required />
-              <input type="email" placeholder="Correo electrónico" required />
-              <input type="text" placeholder="Empresa (opcional)" />
-              <select>
-                <option value="">Servicio de interés</option>
-                <option>Clínica Jurídica (Empresas)</option>
-                <option>Vivir Feliz (Pensión)</option>
-                <option>Soy Trabajador (Laboral)</option>
-                <option>Otro</option>
-              </select>
-              <textarea placeholder="Cuéntenos brevemente su necesidad..." rows={4} />
-              <button type="submit" className="land-btn-primary land-btn-full">
-                Enviar Solicitud
-              </button>
-            </form>
+            {contactSent ? (
+              <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>✅</div>
+                <p style={{ fontWeight: 600, color: '#111', marginBottom: '0.5rem' }}>¡Mensaje enviado!</p>
+                <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>Le contactaremos pronto al correo indicado.</p>
+                <button className="land-btn-primary" style={{ marginTop: '1.25rem' }} onClick={() => setContactSent(false)}>
+                  Enviar otro mensaje
+                </button>
+              </div>
+            ) : (
+              <form className="land-form" onSubmit={handleContactSubmit}>
+                <input
+                  type="text" placeholder="Nombre completo" required
+                  value={contactForm.nombre}
+                  onChange={e => setContactForm(f => ({ ...f, nombre: e.target.value }))}
+                />
+                <input
+                  type="email" placeholder="Correo electrónico" required
+                  value={contactForm.correo}
+                  onChange={e => setContactForm(f => ({ ...f, correo: e.target.value }))}
+                />
+                <input
+                  type="text" placeholder="Empresa (opcional)"
+                  value={contactForm.empresa}
+                  onChange={e => setContactForm(f => ({ ...f, empresa: e.target.value }))}
+                />
+                <select
+                  value={contactForm.servicio}
+                  onChange={e => setContactForm(f => ({ ...f, servicio: e.target.value }))}
+                >
+                  <option value="">Servicio de interés</option>
+                  <option>Clínica Jurídica (Empresas)</option>
+                  <option>Vivir Feliz (Pensión)</option>
+                  <option>Soy Trabajador (Laboral)</option>
+                  <option>Otro</option>
+                </select>
+                <textarea
+                  placeholder="Cuéntenos brevemente su necesidad..." rows={4}
+                  value={contactForm.mensaje}
+                  onChange={e => setContactForm(f => ({ ...f, mensaje: e.target.value }))}
+                />
+                {contactError && <p style={{ color: '#b91c1c', fontSize: '0.85rem', margin: '0' }}>{contactError}</p>}
+                <button type="submit" className="land-btn-primary land-btn-full" disabled={contactSending}>
+                  {contactSending ? 'Enviando...' : 'Enviar Solicitud'}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </section>
