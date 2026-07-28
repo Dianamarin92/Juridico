@@ -6,7 +6,18 @@ const db = require('../config/db');
 const auth = require('../middleware/auth');
 
 const storage = multer.diskStorage({
-  destination: 'uploads/',
+  destination: (req, file, cb) => {
+    let dir = 'uploads/';
+    if (req.body.company_id) {
+      dir = `uploads/empresa_${req.body.company_id}/`;
+    } else if (req.body.ticket_id) {
+      dir = `uploads/ticket_${req.body.ticket_id}/`;
+    } else if (req.body.task_id) {
+      dir = `uploads/tareas/`;
+    }
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
   filename: (req, file, cb) => {
     const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, unique + path.extname(file.originalname));
@@ -23,11 +34,12 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
 
   try {
     const filePath = `/uploads/${req.file.filename}`;
-    await db.query(
+    const [result] = await db.query(
       'INSERT INTO file_uploads (ticket_id, company_id, task_id, filename, path, uploaded_by) VALUES (?, ?, ?, ?, ?, ?)',
       [ticket_id || null, company_id || null, task_id || null, req.file.originalname, filePath, req.user.id]
     );
-    res.status(201).json({ id: (await db.query('SELECT LAST_INSERT_ID() as id'))[0][0].id, path: filePath, filename: req.file.originalname });
+    const [rows] = await db.query('SELECT * FROM file_uploads WHERE id = ?', [result.insertId]);
+    res.status(201).json(rows[0]);
   } catch {
     res.status(500).json({ error: 'Error al guardar archivo' });
   }
@@ -84,7 +96,7 @@ router.delete('/:id', auth, async (req, res) => {
     const [rows] = await db.query('SELECT * FROM file_uploads WHERE id = ?', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'Archivo no encontrado' });
 
-    const fullPath = path.join(__dirname, '../../', rows[0].path);
+    const fullPath = path.join(__dirname, '../..', rows[0].path);
     fs.unlink(fullPath, () => {});
 
     await db.query('DELETE FROM file_uploads WHERE id = ?', [id]);

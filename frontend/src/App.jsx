@@ -339,8 +339,8 @@ export default function App() {
     if (!file || !profileCompany) return;
     setBusy(true);
     try {
-      await api.uploadCompanyFile(profileCompany.id, file);
-      setCompanyFiles(await api.getCompanyFiles(profileCompany.id));
+      const newFile = await api.uploadCompanyFile(profileCompany.id, file);
+      setCompanyFiles(prev => [newFile, ...prev]);
     } catch (err) { setError(err.message); }
     finally { setBusy(false); e.target.value = ''; }
   };
