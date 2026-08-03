@@ -10,24 +10,38 @@ router.get('/', auth, async (req, res) => {
     const [rows] = await db.query(
       "SELECT id, username, name, email, role, is_active FROM users WHERE role != 'cliente' ORDER BY role"
     );
-    res.json(rows);
+    const [access] = await db.query('SELECT user_id, company_id FROM user_company_access');
+    const accessMap = {};
+    for (const a of access) {
+      if (!accessMap[a.user_id]) accessMap[a.user_id] = [];
+      accessMap[a.user_id].push(a.company_id);
+    }
+    res.json(rows.map(u => ({ ...u, company_ids: accessMap[u.id] || [] })));
   } catch {
     res.status(500).json({ error: 'Error al obtener usuarios' });
   }
 });
 
 router.post('/', auth, async (req, res) => {
-  const { username, name, email, password, role } = req.body;
+  const { username, name, email, password, role, company_ids } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
   const validRoles = ['abogada_asignada', 'abogada_lider'];
   if (req.user.role === 'steven_marin') validRoles.push('steven_marin');
   if (!validRoles.includes(role)) return res.status(400).json({ error: 'Rol no válido' });
   try {
     const hash = await bcrypt.hash(password, 10);
-    await db.query(
+    const [result] = await db.query(
       'INSERT INTO users (username, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)',
       [username, name || null, email || null, hash, role]
     );
+    if (role === 'abogada_lider' && Array.isArray(company_ids) && company_ids.length > 0) {
+      for (const cid of company_ids) {
+        await db.query(
+          'INSERT IGNORE INTO user_company_access (user_id, company_id) VALUES (?, ?)',
+          [result.insertId, cid]
+        );
+      }
+    }
     res.status(201).json({ ok: true });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY')
@@ -52,7 +66,7 @@ router.put('/me/password', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   if (!['steven_marin', 'abogada_lider'].includes(req.user.role)) return res.status(403).json({ error: 'Sin permisos' });
   const { id } = req.params;
-  const { name, email, role, password } = req.body;
+  const { name, email, role, password, company_ids } = req.body;
   try {
     const validRoles = ['abogada_asignada', 'abogada_lider', 'steven_marin'];
     if (role && !validRoles.includes(role)) return res.status(400).json({ error: 'Rol no válido' });
@@ -67,9 +81,23 @@ router.put('/:id', auth, async (req, res) => {
       updates.push('password_hash = ?');
       values.push(hash);
     }
-    if (updates.length === 0) return res.status(400).json({ error: 'Nada que actualizar' });
-    values.push(id);
-    await db.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
+    if (updates.length > 0) {
+      values.push(id);
+      await db.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
+    }
+
+    if (company_ids !== undefined) {
+      await db.query('DELETE FROM user_company_access WHERE user_id = ?', [id]);
+      if (Array.isArray(company_ids) && company_ids.length > 0) {
+        for (const cid of company_ids) {
+          await db.query(
+            'INSERT INTO user_company_access (user_id, company_id) VALUES (?, ?)',
+            [id, cid]
+          );
+        }
+      }
+    }
+
     res.json({ ok: true });
   } catch {
     res.status(500).json({ error: 'Error al actualizar usuario' });

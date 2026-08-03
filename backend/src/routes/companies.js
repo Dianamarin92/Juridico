@@ -7,6 +7,21 @@ const router = express.Router();
 
 router.get('/', auth, async (req, res) => {
   try {
+    let whereClause = '';
+    const params = [];
+
+    if (req.user.role === 'abogada_lider') {
+      const [access] = await db.query(
+        'SELECT company_id FROM user_company_access WHERE user_id = ?',
+        [req.user.id]
+      );
+      if (access.length > 0) {
+        const ids = access.map(a => a.company_id);
+        whereClause = `WHERE c.id IN (${ids.map(() => '?').join(',')})`;
+        params.push(...ids);
+      }
+    }
+
     const [rows] = await db.query(`
       SELECT c.*,
         COALESCE(SUM(t.status = 'pending'),  0) AS pending_count,
@@ -15,9 +30,10 @@ router.get('/', auth, async (req, res) => {
         COALESCE(SUM(t.status = 'done'),     0) AS done_count
       FROM companies c
       LEFT JOIN tickets t ON t.company_id = c.id
+      ${whereClause}
       GROUP BY c.id
       ORDER BY c.name
-    `);
+    `, params);
     res.json(rows);
   } catch {
     res.status(500).json({ error: 'Error al obtener empresas' });

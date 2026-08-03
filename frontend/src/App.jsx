@@ -49,7 +49,7 @@ export default function App() {
   const [newCompany, setNewCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '', username: '', password: '' });
 
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
-  const [newUser, setNewUser] = useState({ username: '', name: '', email: '', password: '', role: 'abogada_asignada' });
+  const [newUser, setNewUser] = useState({ username: '', name: '', email: '', password: '', role: 'abogada_asignada', company_ids: [] });
   const [storageInfo, setStorageInfo] = useState({ used: 0, total: 5 * 1024 * 1024 * 1024 });
   const [adminPassword, setAdminPassword] = useState('');
 
@@ -57,7 +57,7 @@ export default function App() {
   const [editPassword, setEditPassword] = useState('');
 
   const [editingUser, setEditingUser] = useState(null);
-  const [editUserForm, setEditUserForm] = useState({ name: '', email: '', role: '', password: '' });
+  const [editUserForm, setEditUserForm] = useState({ name: '', email: '', role: '', password: '', company_ids: [] });
 
   const [profileCompany, setProfileCompany] = useState(null);
   const [companyFiles, setCompanyFiles] = useState([]);
@@ -304,7 +304,7 @@ export default function App() {
     try {
       await api.createUser(newUser);
       setIsCreateUserOpen(false);
-      setNewUser({ username: '', name: '', email: '', password: '', role: 'abogada_asignada' });
+      setNewUser({ username: '', name: '', email: '', password: '', role: 'abogada_asignada', company_ids: [] });
       setLawyers(await api.getUsers());
     } catch (err) {
       setError(err.message);
@@ -380,6 +380,7 @@ export default function App() {
       if (editUserForm.email !== undefined) payload.email = editUserForm.email;
       if (editUserForm.role) payload.role = editUserForm.role;
       if (editUserForm.password) payload.password = editUserForm.password;
+      if (editUserForm.role === 'abogada_lider') payload.company_ids = editUserForm.company_ids;
       await api.updateUser(editingUser.id, payload);
       setEditingUser(null);
       setLawyers(await api.getUsers());
@@ -853,7 +854,7 @@ export default function App() {
                             <button
                               className="btn-secondary"
                               style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                              onClick={() => { setEditingUser(u); setEditUserForm({ name: u.name || '', email: u.email || '', role: u.role, password: '' }); }}
+                              onClick={() => { setEditingUser(u); setEditUserForm({ name: u.name || '', email: u.email || '', role: u.role, password: '', company_ids: u.company_ids || [] }); }}
                             >Editar</button>
                             {u.id !== user.id && (
                               <button
@@ -1978,7 +1979,7 @@ export default function App() {
                 <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>Rol</label>
                 <select
                   value={newUser.role}
-                  onChange={e => setNewUser(prev => ({ ...prev, role: e.target.value }))}
+                  onChange={e => setNewUser(prev => ({ ...prev, role: e.target.value, company_ids: [] }))}
                   style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
                 >
                   <option value="abogada_asignada">Abogada Asignada</option>
@@ -1988,6 +1989,36 @@ export default function App() {
                   )}
                 </select>
               </div>
+              {newUser.role === 'abogada_lider' && (
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                    Empresas asignadas
+                    <span style={{ fontWeight: '400', color: 'var(--text-muted)', marginLeft: '0.4rem' }}>
+                      ({newUser.company_ids.length} seleccionadas — sin selección ve todas)
+                    </span>
+                  </label>
+                  <div style={{ maxHeight: '160px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    {companies.filter(c => c.is_active).map(c => (
+                      <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={newUser.company_ids.includes(c.id)}
+                          onChange={e => setNewUser(prev => ({
+                            ...prev,
+                            company_ids: e.target.checked
+                              ? [...prev.company_ids, c.id]
+                              : prev.company_ids.filter(id => id !== c.id)
+                          }))}
+                        />
+                        {c.name}
+                      </label>
+                    ))}
+                    {companies.filter(c => c.is_active).length === 0 && (
+                      <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>No hay empresas activas.</p>
+                    )}
+                  </div>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                 <button type="button" className="btn-secondary" onClick={() => setIsCreateUserOpen(false)}>Cancelar</button>
                 <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Creando...' : 'Crear Usuario'}</button>
@@ -2160,7 +2191,7 @@ export default function App() {
                 <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>Rol</label>
                 <select
                   value={editUserForm.role}
-                  onChange={e => setEditUserForm(prev => ({ ...prev, role: e.target.value }))}
+                  onChange={e => setEditUserForm(prev => ({ ...prev, role: e.target.value, company_ids: e.target.value === 'abogada_lider' ? prev.company_ids : [] }))}
                   style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
                 >
                   <option value="abogada_asignada">Abogada Asignada</option>
@@ -2168,6 +2199,36 @@ export default function App() {
                   <option value="steven_marin">Admin</option>
                 </select>
               </div>
+              {editUserForm.role === 'abogada_lider' && (
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                    Empresas asignadas
+                    <span style={{ fontWeight: '400', color: 'var(--text-muted)', marginLeft: '0.4rem' }}>
+                      ({editUserForm.company_ids.length} seleccionadas — sin selección ve todas)
+                    </span>
+                  </label>
+                  <div style={{ maxHeight: '160px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    {companies.filter(c => c.is_active).map(c => (
+                      <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={editUserForm.company_ids.includes(c.id)}
+                          onChange={e => setEditUserForm(prev => ({
+                            ...prev,
+                            company_ids: e.target.checked
+                              ? [...prev.company_ids, c.id]
+                              : prev.company_ids.filter(id => id !== c.id)
+                          }))}
+                        />
+                        {c.name}
+                      </label>
+                    ))}
+                    {companies.filter(c => c.is_active).length === 0 && (
+                      <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>No hay empresas activas.</p>
+                    )}
+                  </div>
+                </div>
+              )}
               <div>
                 <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
                   Nueva contraseña <span style={{ color: 'var(--text-muted)', fontWeight: '400' }}>(dejar vacío para no cambiar)</span>
