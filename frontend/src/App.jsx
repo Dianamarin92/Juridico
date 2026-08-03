@@ -1575,8 +1575,17 @@ export default function App() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
 
                     {/* Estadísticas de tickets */}
-                    <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
-                      <h3 style={{ marginTop: 0, color: 'var(--primary-color)', fontSize: '1rem' }}>Tickets</h3>
+                    <div
+                      onClick={() => openCompany(profileCompany)}
+                      style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)', cursor: 'pointer', transition: 'box-shadow 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'}
+                      onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
+                      title="Ver tickets de esta empresa"
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3 style={{ margin: 0, color: 'var(--primary-color)', fontSize: '1rem' }}>Tickets</h3>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: '600' }}>Ver todos →</span>
+                      </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
                         {[
                           { key: 'pending',  label: 'Pendientes',  cls: 'status-pending' },
