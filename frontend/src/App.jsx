@@ -1571,22 +1571,69 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Estadísticas de tickets */}
-                  <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
-                    <h3 style={{ marginTop: 0, color: 'var(--primary-color)', fontSize: '1rem' }}>Tickets</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-                      {[
-                        { key: 'pending',  label: 'Pendientes',  cls: 'status-pending' },
-                        { key: 'progress', label: 'En Proceso',  cls: 'status-progress' },
-                        { key: 'review',   label: 'En Revisión', cls: 'status-review' },
-                        { key: 'done',     label: 'Enviados',    cls: 'status-done' },
-                      ].map(({ key, label, cls }) => (
-                        <div key={key} style={{ background: 'var(--bg-color)', borderRadius: '0.75rem', padding: '1rem', textAlign: 'center', border: '1px solid var(--border-color)' }}>
-                          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--primary-color)' }}>{profileCompany[`${key}_count`] || 0}</div>
-                          <span className={`count-badge ${cls}`} style={{ marginTop: '0.25rem', display: 'inline-block' }}>{label}</span>
-                        </div>
-                      ))}
+                  {/* Fila inferior: Tickets + Tareas */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+
+                    {/* Estadísticas de tickets */}
+                    <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                      <h3 style={{ marginTop: 0, color: 'var(--primary-color)', fontSize: '1rem' }}>Tickets</h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+                        {[
+                          { key: 'pending',  label: 'Pendientes',  cls: 'status-pending' },
+                          { key: 'progress', label: 'En Proceso',  cls: 'status-progress' },
+                          { key: 'review',   label: 'En Revisión', cls: 'status-review' },
+                          { key: 'done',     label: 'Enviados',    cls: 'status-done' },
+                        ].map(({ key, label, cls }) => (
+                          <div key={key} style={{ background: 'var(--bg-color)', borderRadius: '0.75rem', padding: '0.875rem', textAlign: 'center', border: '1px solid var(--border-color)' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary-color)' }}>{profileCompany[`${key}_count`] || 0}</div>
+                            <span className={`count-badge ${cls}`} style={{ marginTop: '0.25rem', display: 'inline-block' }}>{label}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
+
+                    {/* Tareas de la empresa */}
+                    {(() => {
+                      const companyTasks = tasks.filter(t =>
+                        t.cliente_proceso && t.cliente_proceso.toLowerCase().includes(profileCompany.name.toLowerCase())
+                      );
+                      const pendientes  = companyTasks.filter(t => t.estado === 'pendiente').length;
+                      const contestadas = companyTasks.filter(t => t.estado === 'contestada').length;
+                      const terminadas  = companyTasks.filter(t => t.estado === 'terminada').length;
+                      return (
+                        <div
+                          onClick={() => { setTaskSearch(profileCompany.name); setCurrentView('tasks'); }}
+                          style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)', cursor: 'pointer', transition: 'box-shadow 0.2s' }}
+                          onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'}
+                          onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
+                          title="Ver tareas de esta empresa"
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ margin: 0, color: 'var(--primary-color)', fontSize: '1rem' }}>Tareas Pendientes</h3>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: '600' }}>Ver todas →</span>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                            <div style={{ background: '#fee2e2', borderRadius: '0.75rem', padding: '0.875rem', textAlign: 'center' }}>
+                              <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#b91c1c' }}>{pendientes}</div>
+                              <span style={{ fontSize: '0.75rem', fontWeight: '600', color: '#b91c1c' }}>Pendientes</span>
+                            </div>
+                            <div style={{ background: '#dbeafe', borderRadius: '0.75rem', padding: '0.875rem', textAlign: 'center' }}>
+                              <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1d4ed8' }}>{contestadas}</div>
+                              <span style={{ fontSize: '0.75rem', fontWeight: '600', color: '#1d4ed8' }}>Contestadas</span>
+                            </div>
+                            <div style={{ background: '#dcfce7', borderRadius: '0.75rem', padding: '0.875rem', textAlign: 'center' }}>
+                              <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#15803d' }}>{terminadas}</div>
+                              <span style={{ fontSize: '0.75rem', fontWeight: '600', color: '#15803d' }}>Terminadas</span>
+                            </div>
+                          </div>
+                          {companyTasks.length === 0 && (
+                            <p style={{ margin: '1rem 0 0', color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>
+                              No hay tareas registradas para esta empresa.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </>
               )}
