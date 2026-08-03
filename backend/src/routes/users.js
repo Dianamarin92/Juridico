@@ -10,12 +10,14 @@ router.get('/', auth, async (req, res) => {
     const [rows] = await db.query(
       "SELECT id, username, name, email, role, is_active FROM users WHERE role != 'cliente' ORDER BY role"
     );
-    const [access] = await db.query('SELECT user_id, company_id FROM user_company_access');
-    const accessMap = {};
-    for (const a of access) {
-      if (!accessMap[a.user_id]) accessMap[a.user_id] = [];
-      accessMap[a.user_id].push(a.company_id);
-    }
+    let accessMap = {};
+    try {
+      const [access] = await db.query('SELECT user_id, company_id FROM user_company_access');
+      for (const a of access) {
+        if (!accessMap[a.user_id]) accessMap[a.user_id] = [];
+        accessMap[a.user_id].push(a.company_id);
+      }
+    } catch { /* tabla aún no creada */ }
     res.json(rows.map(u => ({ ...u, company_ids: accessMap[u.id] || [] })));
   } catch {
     res.status(500).json({ error: 'Error al obtener usuarios' });
