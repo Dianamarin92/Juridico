@@ -1509,82 +1509,84 @@ export default function App() {
                       )}
                     </div>
 
-                    {/* Estadísticas de tickets */}
+                    {/* Documentos de la empresa */}
                     <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
-                      <h3 style={{ marginTop: 0, color: 'var(--primary-color)', fontSize: '1rem' }}>Tickets</h3>
+                      <h3 style={{ margin: '0 0 1.25rem', color: 'var(--primary-color)', fontSize: '1rem' }}>Documentos de la Empresa</h3>
+
+                      {!folderOpen ? (
+                        /* Vista carpeta */
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '1.5rem 0' }}>
+                          <div
+                            onClick={() => setFolderOpen(true)}
+                            style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', transition: 'transform 0.15s' }}
+                            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
+                            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                            title="Abrir carpeta de documentos"
+                          >
+                            <svg width="80" height="72" viewBox="0 0 80 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M4 16C4 12.686 6.686 10 10 10H30L38 20H70C73.314 20 76 22.686 76 26V62C76 65.314 73.314 68 70 68H10C6.686 68 4 65.314 4 62V16Z" fill="#c0392b" opacity="0.15"/>
+                              <path d="M4 16C4 12.686 6.686 10 10 10H30L38 20H70C73.314 20 76 22.686 76 26V62C76 65.314 73.314 68 70 68H10C6.686 68 4 65.314 4 62V16Z" fill="none" stroke="#c0392b" strokeWidth="2.5"/>
+                              <path d="M4 28H76" stroke="#c0392b" strokeWidth="2" opacity="0.4"/>
+                            </svg>
+                            <span style={{ fontWeight: '600', color: 'var(--primary-color)', fontSize: '0.9rem' }}>
+                              {companyFilesLoading ? 'Cargando...' : `${companyFiles.length} documento${companyFiles.length !== 1 ? 's' : ''}`}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Clic para abrir</span>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Vista lista dentro de la carpeta */
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.3rem 0.75rem' }} onClick={() => setFolderOpen(false)}>
+                              ← Cerrar carpeta
+                            </button>
+                            <label className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                              📎 Subir Archivo
+                              <input type="file" hidden onChange={handleUploadCompanyFile} />
+                            </label>
+                          </div>
+                          {companyFilesLoading ? (
+                            <div className="spinner-wrapper"><div className="spinner" /><span>Cargando documentos...</span></div>
+                          ) : companyFiles.length === 0 ? (
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No hay documentos subidos aún.</p>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              {companyFiles.map(f => (
+                                <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: 'var(--bg-color)', borderRadius: '0.5rem', fontSize: '0.875rem' }}>
+                                  <span
+                                    onClick={() => setPreviewFile(f)}
+                                    style={{ flex: 1, cursor: 'pointer', color: 'var(--accent-color)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                  >📄 {f.filename}</span>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{new Date(f.created_at).toLocaleDateString('es-CO')}</span>
+                                  <button onClick={() => setPreviewFile(f)} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}>👁 Ver</button>
+                                  <a href={`${import.meta.env.VITE_API_URL}${f.path}`} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', textDecoration: 'none' }}>⬇ Descargar</a>
+                                  <button className="btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => handleDeleteCompanyFile(f.id)}>×</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Estadísticas de tickets */}
+                  <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                    <h3 style={{ marginTop: 0, color: 'var(--primary-color)', fontSize: '1rem' }}>Tickets</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
                       {[
                         { key: 'pending',  label: 'Pendientes',  cls: 'status-pending' },
                         { key: 'progress', label: 'En Proceso',  cls: 'status-progress' },
                         { key: 'review',   label: 'En Revisión', cls: 'status-review' },
                         { key: 'done',     label: 'Enviados',    cls: 'status-done' },
                       ].map(({ key, label, cls }) => (
-                        <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                          <span className={`count-badge ${cls}`}>{label}</span>
-                          <strong style={{ color: 'var(--primary-color)' }}>{profileCompany[`${key}_count`] || 0}</strong>
+                        <div key={key} style={{ background: 'var(--bg-color)', borderRadius: '0.75rem', padding: '1rem', textAlign: 'center', border: '1px solid var(--border-color)' }}>
+                          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--primary-color)' }}>{profileCompany[`${key}_count`] || 0}</div>
+                          <span className={`count-badge ${cls}`} style={{ marginTop: '0.25rem', display: 'inline-block' }}>{label}</span>
                         </div>
                       ))}
                     </div>
-                  </div>
-
-                  {/* Documentos de la empresa */}
-                  <div style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
-                    <h3 style={{ margin: '0 0 1.25rem', color: 'var(--primary-color)', fontSize: '1rem' }}>Documentos de la Empresa</h3>
-
-                    {!folderOpen ? (
-                      /* Vista carpeta */
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '1.5rem 0' }}>
-                        <div
-                          onClick={() => setFolderOpen(true)}
-                          style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', transition: 'transform 0.15s' }}
-                          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
-                          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                          title="Abrir carpeta de documentos"
-                        >
-                          <svg width="80" height="72" viewBox="0 0 80 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M4 16C4 12.686 6.686 10 10 10H30L38 20H70C73.314 20 76 22.686 76 26V62C76 65.314 73.314 68 70 68H10C6.686 68 4 65.314 4 62V16Z" fill="#c0392b" opacity="0.15"/>
-                            <path d="M4 16C4 12.686 6.686 10 10 10H30L38 20H70C73.314 20 76 22.686 76 26V62C76 65.314 73.314 68 70 68H10C6.686 68 4 65.314 4 62V16Z" fill="none" stroke="#c0392b" strokeWidth="2.5"/>
-                            <path d="M4 28H76" stroke="#c0392b" strokeWidth="2" opacity="0.4"/>
-                          </svg>
-                          <span style={{ fontWeight: '600', color: 'var(--primary-color)', fontSize: '0.9rem' }}>
-                            {companyFilesLoading ? 'Cargando...' : `${companyFiles.length} documento${companyFiles.length !== 1 ? 's' : ''}`}
-                          </span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Clic para abrir</span>
-                        </div>
-                      </div>
-                    ) : (
-                      /* Vista lista dentro de la carpeta */
-                      <>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                          <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.3rem 0.75rem' }} onClick={() => setFolderOpen(false)}>
-                            ← Cerrar carpeta
-                          </button>
-                          <label className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                            📎 Subir Archivo
-                            <input type="file" hidden onChange={handleUploadCompanyFile} />
-                          </label>
-                        </div>
-                        {companyFilesLoading ? (
-                          <div className="spinner-wrapper"><div className="spinner" /><span>Cargando documentos...</span></div>
-                        ) : companyFiles.length === 0 ? (
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No hay documentos subidos aún.</p>
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {companyFiles.map(f => (
-                              <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: 'var(--bg-color)', borderRadius: '0.5rem', fontSize: '0.875rem' }}>
-                                <span
-                                  onClick={() => setPreviewFile(f)}
-                                  style={{ flex: 1, cursor: 'pointer', color: 'var(--accent-color)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                                >📄 {f.filename}</span>
-                                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{new Date(f.created_at).toLocaleDateString('es-CO')}</span>
-                                <button onClick={() => setPreviewFile(f)} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}>👁 Ver</button>
-                                <a href={`${import.meta.env.VITE_API_URL}${f.path}`} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', textDecoration: 'none' }}>⬇ Descargar</a>
-                                <button className="btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => handleDeleteCompanyFile(f.id)}>×</button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    )}
                   </div>
                 </>
               )}
