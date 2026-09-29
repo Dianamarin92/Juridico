@@ -91,8 +91,8 @@ export const deleteTask = (id) =>
 export const getAllTaskFiles = () => request('/files?all_tasks=1');
 export const uploadTaskFile = (task_id, file) => {
   const form = new FormData();
-  form.append('file', file);
   form.append('task_id', task_id);
+  form.append('file', file);
   const token = localStorage.getItem('token');
   return fetch(`${BASE}/files/upload`, {
     method: 'POST',
@@ -106,8 +106,8 @@ export const getFiles = (ticket_id) => request(`/files?ticket_id=${ticket_id}`);
 export const deleteFile = (id) => request(`/files/${id}`, { method: 'DELETE' });
 export const uploadFile = (ticket_id, file) => {
   const form = new FormData();
-  form.append('file', file);
   form.append('ticket_id', ticket_id);
+  form.append('file', file);
   const token = localStorage.getItem('token');
   return fetch(`${BASE}/files/upload`, {
     method: 'POST',
@@ -120,8 +120,8 @@ export const uploadFile = (ticket_id, file) => {
 export const getCompanyFiles = (company_id) => request(`/files?company_id=${company_id}`);
 export const uploadCompanyFile = (company_id, file) => {
   const form = new FormData();
-  form.append('file', file);
   form.append('company_id', company_id);
+  form.append('file', file);
   const token = localStorage.getItem('token');
   return fetch(`${BASE}/files/upload`, {
     method: 'POST',
