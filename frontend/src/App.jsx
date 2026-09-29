@@ -17,6 +17,10 @@ const STATUS_INFO = {
   done:     { text: 'Enviado',     cls: 'status-done' },
 };
 
+// El atributo `download` no funciona entre dominios; el backend fuerza la descarga con ?download=<nombre>
+const fileDownloadUrl = (f) =>
+  `${import.meta.env.VITE_API_URL}${f.path}?download=${encodeURIComponent(f.filename)}`;
+
 export default function App() {
   const [showLanding, setShowLanding] = useState(true);
   const [user, setUser]               = useState(null);
@@ -1561,7 +1565,7 @@ export default function App() {
                                   >📄 {f.filename}</span>
                                   <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{new Date(f.created_at).toLocaleDateString('es-CO')}</span>
                                   <button onClick={() => setPreviewFile(f)} className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}>👁 Ver</button>
-                                  <a href={`${import.meta.env.VITE_API_URL}${f.path}`} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', textDecoration: 'none' }}>⬇ Descargar</a>
+                                  <a href={fileDownloadUrl(f)} className="btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', textDecoration: 'none' }}>⬇ Descargar</a>
                                   <button className="btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => handleDeleteCompanyFile(f.id)}>×</button>
                                 </div>
                               ))}
@@ -1902,7 +1906,16 @@ export default function App() {
                         {files.length === 0 && <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Sin archivos adjuntos.</p>}
                         {files.map(f => (
                           <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', background: 'var(--bg-color)', borderRadius: '0.5rem', fontSize: '0.875rem' }}>
-                            <span style={{ flex: 1 }}>📄 {f.filename}</span>
+                            <span
+                              onClick={() => setPreviewFile({ ...f, company: selectedCompany })}
+                              title="Ver archivo"
+                              style={{ flex: 1, cursor: 'pointer', color: 'var(--accent-color)', fontWeight: '500', wordBreak: 'break-word' }}
+                            >📄 {f.filename}</span>
+                            <a
+                              href={fileDownloadUrl(f)}
+                              title="Descargar archivo"
+                              style={{ textDecoration: 'none', fontSize: '0.95rem', padding: '0 0.25rem' }}
+                            >⬇</a>
                             <button
                               onClick={() => handleDeleteFile(f.id)}
                               title="Eliminar archivo"
@@ -2092,6 +2105,7 @@ export default function App() {
       {/* MODAL PREVISUALIZAR DOCUMENTO */}
       {previewFile && (() => {
         const url = `${import.meta.env.VITE_API_URL}${previewFile.path}`;
+        const previewCompany = 'company' in previewFile ? previewFile.company : profileCompany;
         const ext = previewFile.filename.split('.').pop().toLowerCase();
         const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
         const isPdf = ext === 'pdf';
@@ -2109,27 +2123,27 @@ export default function App() {
                   <div>
                     <div style={{ fontWeight: '700', color: 'var(--primary-color)', fontSize: '0.95rem' }}>{previewFile.filename}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
-                      {profileCompany?.name && <span style={{ fontWeight: '600' }}>{profileCompany.name} · </span>}
+                      {previewCompany?.name && <span style={{ fontWeight: '600' }}>{previewCompany.name} · </span>}
                       Subido el {new Date(previewFile.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
                     </div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
                   <a href={url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', textDecoration: 'none' }}>↗ Abrir</a>
-                  <a href={url} download={previewFile.filename} className="btn-primary" style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', textDecoration: 'none' }}>⬇ Descargar</a>
+                  <a href={fileDownloadUrl(previewFile)} className="btn-primary" style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', textDecoration: 'none' }}>⬇ Descargar</a>
                   <button onClick={() => setPreviewFile(null)} style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: '0.5rem', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-muted)', lineHeight: 1, padding: '0.2rem 0.55rem' }}>×</button>
                 </div>
               </div>
 
               {/* Info empresa — compacta */}
-              {profileCompany && (
+              {previewCompany && (
                 <div style={{ padding: '0.5rem 1.5rem', background: '#f8f9fa', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '1.5rem', flexShrink: 0, flexWrap: 'wrap' }}>
                   {[
-                    { label: 'Empresa', value: profileCompany.name },
-                    { label: 'NIT', value: profileCompany.nit },
-                    { label: 'Contacto', value: profileCompany.contact_name },
-                    { label: 'Tel', value: profileCompany.phone },
-                    { label: 'Correo', value: profileCompany.email },
+                    { label: 'Empresa', value: previewCompany.name },
+                    { label: 'NIT', value: previewCompany.nit },
+                    { label: 'Contacto', value: previewCompany.contact_name },
+                    { label: 'Tel', value: previewCompany.phone },
+                    { label: 'Correo', value: previewCompany.email },
                   ].filter(d => d.value).map(({ label, value }) => (
                     <div key={label} style={{ fontSize: '0.75rem' }}>
                       <span style={{ color: 'var(--text-muted)', fontWeight: '600' }}>{label}: </span>
@@ -2151,7 +2165,7 @@ export default function App() {
                   <div style={{ textAlign: 'center', padding: '3rem', color: '#d1d5db' }}>
                     <p style={{ fontSize: '3rem', margin: '0 0 1rem' }}>📎</p>
                     <p style={{ fontSize: '1rem', marginBottom: '1.5rem' }}>Vista previa no disponible para este tipo de archivo.</p>
-                    <a href={url} download={previewFile.filename} className="btn-primary" style={{ textDecoration: 'none', padding: '0.6rem 1.25rem' }}>⬇ Descargar archivo</a>
+                    <a href={fileDownloadUrl(previewFile)} className="btn-primary" style={{ textDecoration: 'none', padding: '0.6rem 1.25rem' }}>⬇ Descargar archivo</a>
                   </div>
                 )}
               </div>
