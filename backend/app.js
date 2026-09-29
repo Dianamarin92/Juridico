@@ -22,7 +22,10 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', (req, res, next) => {
   res.setHeader('X-Frame-Options', 'ALLOWALL');
-  res.setHeader('Content-Disposition', 'inline');
+  const name = typeof req.query.download === 'string' ? req.query.download : '';
+  res.setHeader('Content-Disposition', name
+    ? `attachment; filename*=UTF-8''${encodeURIComponent(name)}`
+    : 'inline');
   next();
 }, express.static(path.join(__dirname, 'uploads')));
 
