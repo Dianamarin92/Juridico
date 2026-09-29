@@ -305,6 +305,8 @@ frontend/src/
 
 ### Pendiente
 - [x] Actualizar multer a 2.x en backend (2026-09-29, `^2.4.0` — requiere `npm install --prod` en servidor)
+- [ ] Revisar las 7 vulnerabilidades de npm (6 moderadas, 1 alta) en dependencias del backend (Express, Nodemailer, node-cron, etc.). Probablemente requieren versiones mayores → probar localmente antes de subir (instalar Node en el equipo de desarrollo).
+  - `npm audit` no funciona en el servidor: el npm de CloudLinux (nodevenv) no crea `package-lock.json` (error `ENOLOCK`). Correr la auditoría localmente con `pnpm audit --prod` o `npm audit --omit=dev`.
 
 ## Historial del proyecto
 
