@@ -304,7 +304,7 @@ frontend/src/
 - **Firewall Dongee:** fue necesario desactivarlo para permitir conexiones FTP desde GitHub Actions
 
 ### Pendiente
-- [ ] Actualizar multer a 2.x en backend (advertencia de seguridad en multer 1.x)
+- [x] Actualizar multer a 2.x en backend (2026-09-29, `^2.4.0` — requiere `npm install --prod` en servidor)
 
 ## Historial del proyecto
 

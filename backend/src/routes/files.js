@@ -7,11 +7,14 @@ const auth = require('../middleware/auth');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    // Los campos deben ir antes que el archivo en el FormData para estar disponibles aquí
+    const companyId = parseInt(req.body.company_id, 10);
+    const ticketId = parseInt(req.body.ticket_id, 10);
     let dir = 'uploads/';
-    if (req.body.company_id) {
-      dir = `uploads/empresa_${req.body.company_id}/`;
-    } else if (req.body.ticket_id) {
-      dir = `uploads/ticket_${req.body.ticket_id}/`;
+    if (companyId > 0) {
+      dir = `uploads/empresa_${companyId}/`;
+    } else if (ticketId > 0) {
+      dir = `uploads/ticket_${ticketId}/`;
     } else if (req.body.task_id) {
       dir = `uploads/tareas/`;
     }
@@ -33,7 +36,7 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
   if (!ticket_id && !company_id && !task_id) return res.status(400).json({ error: 'ticket_id, company_id o task_id requerido' });
 
   try {
-    const filePath = `/uploads/${req.file.filename}`;
+    const filePath = '/' + path.posix.join(req.file.destination, req.file.filename);
     const [result] = await db.query(
       'INSERT INTO file_uploads (ticket_id, company_id, task_id, filename, path, uploaded_by) VALUES (?, ?, ?, ?, ?, ?)',
       [ticket_id || null, company_id || null, task_id || null, req.file.originalname, filePath, req.user.id]
@@ -48,15 +51,18 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
 router.get('/storage', auth, async (req, res) => {
   const TOTAL_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB
   const uploadsDir = path.join(__dirname, '../../uploads');
-  let usedBytes = 0;
-  if (fs.existsSync(uploadsDir)) {
-    for (const file of fs.readdirSync(uploadsDir)) {
+  const dirSize = (dir) => {
+    let total = 0;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       try {
-        const stat = fs.statSync(path.join(uploadsDir, file));
-        if (stat.isFile()) usedBytes += stat.size;
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) total += dirSize(full);
+        else if (entry.isFile()) total += fs.statSync(full).size;
       } catch {}
     }
-  }
+    return total;
+  };
+  const usedBytes = fs.existsSync(uploadsDir) ? dirSize(uploadsDir) : 0;
   res.json({ used: usedBytes, total: TOTAL_BYTES });
 });
 
