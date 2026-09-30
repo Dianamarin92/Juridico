@@ -1088,7 +1088,7 @@ export default function App() {
                               <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                                 Empresa: {t.company_name
                                   ? <strong style={{ color: 'var(--text-color)' }}>{t.company_name}</strong>
-                                  : <em>Sin empresa (tarea interna)</em>}
+                                  : <em>Sin empresa</em>}
                               </p>
                               {t.cliente_proceso && <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Cliente / Proceso: <strong style={{ color: 'var(--text-color)' }}>{t.cliente_proceso}</strong></p>}
                               {t.responsable && <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Responsable: <strong style={{ color: 'var(--text-color)' }}>{t.responsable}</strong></p>}
@@ -1183,7 +1183,7 @@ export default function App() {
                             required={!userSeesAllCompanies}
                             style={inputStyle}
                           >
-                            <option value="">{userSeesAllCompanies ? '— Sin empresa (tarea interna) —' : '— Selecciona una empresa —'}</option>
+                            <option value="">{userSeesAllCompanies ? '— Sin empresa —' : '— Selecciona una empresa —'}</option>
                             {companies
                               .filter(c => c.is_active || String(c.id) === taskForm.company_id)
                               .map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
