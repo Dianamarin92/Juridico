@@ -1090,7 +1090,7 @@ export default function App() {
                                   ? <strong style={{ color: 'var(--text-color)' }}>{t.company_name}</strong>
                                   : <em>Sin empresa (tarea interna)</em>}
                               </p>
-                              {t.cliente_proceso && <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Proceso: <strong style={{ color: 'var(--text-color)' }}>{t.cliente_proceso}</strong></p>}
+                              {t.cliente_proceso && <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Cliente / Proceso: <strong style={{ color: 'var(--text-color)' }}>{t.cliente_proceso}</strong></p>}
                               {t.responsable && <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Responsable: <strong style={{ color: 'var(--text-color)' }}>{t.responsable}</strong></p>}
                               {t.observaciones && <p style={{ margin: '0.4rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>{t.observaciones}</p>}
                               {t.link_revision && (
@@ -1190,8 +1190,8 @@ export default function App() {
                           </select>
                         </div>
                         <div>
-                          <label style={labelStyle}>Proceso</label>
-                          <input type="text" value={taskForm.cliente_proceso} onChange={e => setTaskForm(p => ({ ...p, cliente_proceso: e.target.value }))} placeholder="Ej. Demanda laboral 2026" style={inputStyle} />
+                          <label style={labelStyle}>Cliente / Proceso</label>
+                          <input type="text" value={taskForm.cliente_proceso} onChange={e => setTaskForm(p => ({ ...p, cliente_proceso: e.target.value }))} placeholder="Ej. Juan Pérez – demanda laboral" style={inputStyle} />
                         </div>
                         <div>
                           <label style={labelStyle}>Tarea <span style={{ color: '#b91c1c' }}>*</span></label>
