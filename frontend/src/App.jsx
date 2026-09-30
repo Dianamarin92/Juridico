@@ -21,6 +21,59 @@ const STATUS_INFO = {
 const fileDownloadUrl = (f) =>
   `${import.meta.env.VITE_API_URL}${f.path}?download=${encodeURIComponent(f.filename)}`;
 
+// Selector de empresas para abogadas: "Todas" o una lista explícita
+function CompanyAccessPicker({ companies, allCompanies, companyIds, canGrantAll, onChange }) {
+  const active = companies.filter(c => c.is_active);
+  const optionStyle = { display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' };
+  const toggle = (id, checked) => onChange({
+    all_companies: false,
+    company_ids: checked ? [...companyIds, id] : companyIds.filter(x => x !== id),
+  });
+  return (
+    <div>
+      <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
+        Empresas que puede ver y trabajar <span style={{ color: '#dc2626' }}>*</span>
+      </label>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.5rem' }}>
+        {canGrantAll && (
+          <label style={optionStyle}>
+            <input type="radio" checked={allCompanies} onChange={() => onChange({ all_companies: true, company_ids: [] })} />
+            Todas las empresas <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>(incluye las que se creen después)</span>
+          </label>
+        )}
+        <label style={optionStyle}>
+          <input type="radio" checked={!allCompanies} onChange={() => onChange({ all_companies: false, company_ids: companyIds })} />
+          Solo las empresas seleccionadas
+          {!allCompanies && <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>({companyIds.length} de {active.length})</span>}
+        </label>
+      </div>
+      {!allCompanies && (
+        <>
+          {active.length > 1 && (
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.35rem', fontSize: '0.8rem' }}>
+              <button type="button" onClick={() => onChange({ all_companies: false, company_ids: active.map(c => c.id) })}
+                style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', cursor: 'pointer' }}>Marcar todas</button>
+              <button type="button" onClick={() => onChange({ all_companies: false, company_ids: [] })}
+                style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', cursor: 'pointer' }}>Desmarcar todas</button>
+            </div>
+          )}
+          <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            {active.map(c => (
+              <label key={c.id} style={{ ...optionStyle, fontSize: '0.875rem' }}>
+                <input type="checkbox" checked={companyIds.includes(c.id)} onChange={e => toggle(c.id, e.target.checked)} />
+                {c.name}
+              </label>
+            ))}
+            {active.length === 0 && (
+              <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>No hay empresas activas.</p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const [showLanding, setShowLanding] = useState(true);
   const [user, setUser]               = useState(null);
@@ -53,7 +106,7 @@ export default function App() {
   const [newCompany, setNewCompany] = useState({ name: '', nit: '', contact_name: '', phone: '', email: '', username: '', password: '' });
 
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
-  const [newUser, setNewUser] = useState({ username: '', name: '', email: '', password: '', role: 'abogada_asignada', company_ids: [] });
+  const [newUser, setNewUser] = useState({ username: '', name: '', email: '', password: '', role: 'abogada_asignada', all_companies: true, company_ids: [] });
   const [storageInfo, setStorageInfo] = useState({ used: 0, total: 5 * 1024 * 1024 * 1024 });
   const [adminPassword, setAdminPassword] = useState('');
 
@@ -61,7 +114,7 @@ export default function App() {
   const [editPassword, setEditPassword] = useState('');
 
   const [editingUser, setEditingUser] = useState(null);
-  const [editUserForm, setEditUserForm] = useState({ name: '', email: '', role: '', password: '', company_ids: [] });
+  const [editUserForm, setEditUserForm] = useState({ name: '', email: '', role: '', password: '', all_companies: true, company_ids: [] });
 
   const [profileCompany, setProfileCompany] = useState(null);
   const [companyFiles, setCompanyFiles] = useState([]);
@@ -92,6 +145,8 @@ export default function App() {
   const isLoggedIn = !!user;
   const role       = user?.role;
   const isCliente  = role === 'cliente';
+  // Una Abogada Líder con empresas restringidas no puede dar acceso a todas
+  const canGrantAllCompanies = role !== 'abogada_lider' || lawyers.find(l => l.id === user?.id)?.all_companies !== 0;
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -302,13 +357,23 @@ export default function App() {
     }
   };
 
+  const companyAccessPayload = (form) => {
+    if (form.role === 'steven_marin') return { all_companies: true, company_ids: [] };
+    const all = form.all_companies && canGrantAllCompanies;
+    if (!all && form.company_ids.length === 0)
+      return { error: 'Selecciona al menos una empresa o elige "Todas las empresas".' };
+    return { all_companies: all, company_ids: all ? [] : form.company_ids };
+  };
+
   const handleCreateUser = async (e) => {
     e.preventDefault();
+    const access = companyAccessPayload(newUser);
+    if (access.error) return setError(access.error);
     setBusy(true);
     try {
-      await api.createUser(newUser);
+      await api.createUser({ ...newUser, ...access });
       setIsCreateUserOpen(false);
-      setNewUser({ username: '', name: '', email: '', password: '', role: 'abogada_asignada', company_ids: [] });
+      setNewUser({ username: '', name: '', email: '', password: '', role: 'abogada_asignada', all_companies: canGrantAllCompanies, company_ids: [] });
       setLawyers(await api.getUsers());
     } catch (err) {
       setError(err.message);
@@ -377,6 +442,8 @@ export default function App() {
 
   const handleSaveUser = async (e) => {
     e.preventDefault();
+    const access = companyAccessPayload(editUserForm);
+    if (access.error) return setError(access.error);
     setBusy(true);
     try {
       const payload = {};
@@ -384,7 +451,8 @@ export default function App() {
       if (editUserForm.email !== undefined) payload.email = editUserForm.email;
       if (editUserForm.role) payload.role = editUserForm.role;
       if (editUserForm.password) payload.password = editUserForm.password;
-      if (editUserForm.role === 'abogada_lider') payload.company_ids = editUserForm.company_ids;
+      payload.all_companies = access.all_companies;
+      payload.company_ids = access.company_ids;
       await api.updateUser(editingUser.id, payload);
       setEditingUser(null);
       setLawyers(await api.getUsers());
@@ -646,7 +714,7 @@ export default function App() {
     <div className="app-container">
       {(loading || busy) && <div className="loading-bar" />}
       {error && (
-        <div style={{ position: 'fixed', top: '1rem', right: '1rem', background: '#fee2e2', color: '#b91c1c', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', zIndex: 200, fontSize: '0.875rem', boxShadow: '0 4px 12px rgba(0,0,0,.15)' }}>
+        <div style={{ position: 'fixed', top: '1rem', right: '1rem', background: '#fee2e2', color: '#b91c1c', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', zIndex: 3000, fontSize: '0.875rem', boxShadow: '0 4px 12px rgba(0,0,0,.15)' }}>
           {error}
           <button onClick={() => setError('')} style={{ background: 'none', border: 'none', marginLeft: '1rem', cursor: 'pointer', fontWeight: 'bold' }}>×</button>
         </div>
@@ -823,7 +891,7 @@ export default function App() {
                   <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Usuarios del Sistema</h1>
                   <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>Gestiona los usuarios administrativos del portal.</p>
                 </div>
-                <button className="btn-primary" onClick={() => setIsCreateUserOpen(true)}>+ Nuevo Usuario</button>
+                <button className="btn-primary" onClick={() => { setNewUser(prev => ({ ...prev, all_companies: canGrantAllCompanies })); setIsCreateUserOpen(true); }}>+ Nuevo Usuario</button>
               </div>
               <div className="table-container">
                 <table className="data-table">
@@ -833,13 +901,14 @@ export default function App() {
                       <th>Cédula</th>
                       <th>Correo</th>
                       <th>Rol</th>
+                      <th>Empresas</th>
                       <th style={{ textAlign: 'center' }}>Estado</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {lawyers.length === 0 && (
-                      <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No hay usuarios registrados.</td></tr>
+                      <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No hay usuarios registrados.</td></tr>
                     )}
                     {lawyers.map(u => {
                       const active = u.is_active !== 0;
@@ -849,6 +918,20 @@ export default function App() {
                           <td style={{ color: 'var(--text-muted)' }}>{u.username}</td>
                           <td style={{ color: 'var(--text-muted)' }}>{u.email || '—'}</td>
                           <td><span className="role-badge">{ROLE_LABELS[u.role] || u.role}</span></td>
+                          <td style={{ fontSize: '0.85rem' }}>
+                            {u.role === 'steven_marin' || u.all_companies !== 0 ? (
+                              <span style={{ color: 'var(--text-muted)' }}>Todas</span>
+                            ) : (() => {
+                              const names = u.company_ids.map(id => companies.find(c => c.id === id)?.name).filter(Boolean);
+                              return (
+                                <span title={names.join(', ')} style={{ cursor: 'help' }}>
+                                  {names.length > 0 && names.length <= 2 && names.length === u.company_ids.length
+                                    ? names.join(', ')
+                                    : `${u.company_ids.length} ${u.company_ids.length === 1 ? 'empresa' : 'empresas'}`}
+                                </span>
+                              );
+                            })()}
+                          </td>
                           <td style={{ textAlign: 'center' }}>
                             {active
                               ? <span style={{ background: '#d1fae5', color: '#065f46', padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600' }}>Activo</span>
@@ -858,7 +941,7 @@ export default function App() {
                             <button
                               className="btn-secondary"
                               style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                              onClick={() => { setEditingUser(u); setEditUserForm({ name: u.name || '', email: u.email || '', role: u.role, password: '', company_ids: u.company_ids || [] }); }}
+                              onClick={() => { setEditingUser(u); setEditUserForm({ name: u.name || '', email: u.email || '', role: u.role, password: '', all_companies: u.all_companies !== 0, company_ids: u.company_ids || [] }); }}
                             >Editar</button>
                             {u.id !== user.id && (
                               <button
@@ -1884,7 +1967,9 @@ export default function App() {
                             style={{ padding: '0.25rem', borderRadius: '0.25rem', border: '1px solid var(--border-color)', fontSize: '0.875rem' }}
                           >
                             <option value="">Sin asignar</option>
-                            {lawyers.map(l => (
+                            {lawyers.filter(l =>
+                              l.all_companies !== 0 || l.company_ids?.includes(selectedTicket.company_id) || l.id === selectedTicket.assigned_to
+                            ).map(l => (
                               <option key={l.id} value={l.id}>{l.name || l.email}</option>
                             ))}
                           </select>
@@ -1992,7 +2077,7 @@ export default function App() {
                 <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>Rol</label>
                 <select
                   value={newUser.role}
-                  onChange={e => setNewUser(prev => ({ ...prev, role: e.target.value, company_ids: [] }))}
+                  onChange={e => setNewUser(prev => ({ ...prev, role: e.target.value }))}
                   style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
                 >
                   <option value="abogada_asignada">Abogada Asignada</option>
@@ -2002,35 +2087,16 @@ export default function App() {
                   )}
                 </select>
               </div>
-              {newUser.role === 'abogada_lider' && (
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
-                    Empresas asignadas
-                    <span style={{ fontWeight: '400', color: 'var(--text-muted)', marginLeft: '0.4rem' }}>
-                      ({newUser.company_ids.length} seleccionadas — sin selección ve todas)
-                    </span>
-                  </label>
-                  <div style={{ maxHeight: '160px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                    {companies.filter(c => c.is_active).map(c => (
-                      <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
-                        <input
-                          type="checkbox"
-                          checked={newUser.company_ids.includes(c.id)}
-                          onChange={e => setNewUser(prev => ({
-                            ...prev,
-                            company_ids: e.target.checked
-                              ? [...prev.company_ids, c.id]
-                              : prev.company_ids.filter(id => id !== c.id)
-                          }))}
-                        />
-                        {c.name}
-                      </label>
-                    ))}
-                    {companies.filter(c => c.is_active).length === 0 && (
-                      <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>No hay empresas activas.</p>
-                    )}
-                  </div>
-                </div>
+              {newUser.role === 'steven_marin' ? (
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>El Admin tiene acceso a todas las empresas.</p>
+              ) : (
+                <CompanyAccessPicker
+                  companies={companies}
+                  allCompanies={newUser.all_companies && canGrantAllCompanies}
+                  companyIds={newUser.company_ids}
+                  canGrantAll={canGrantAllCompanies}
+                  onChange={access => setNewUser(prev => ({ ...prev, ...access }))}
+                />
               )}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                 <button type="button" className="btn-secondary" onClick={() => setIsCreateUserOpen(false)}>Cancelar</button>
@@ -2205,7 +2271,7 @@ export default function App() {
                 <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>Rol</label>
                 <select
                   value={editUserForm.role}
-                  onChange={e => setEditUserForm(prev => ({ ...prev, role: e.target.value, company_ids: e.target.value === 'abogada_lider' ? prev.company_ids : [] }))}
+                  onChange={e => setEditUserForm(prev => ({ ...prev, role: e.target.value }))}
                   style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
                 >
                   <option value="abogada_asignada">Abogada Asignada</option>
@@ -2213,35 +2279,16 @@ export default function App() {
                   <option value="steven_marin">Admin</option>
                 </select>
               </div>
-              {editUserForm.role === 'abogada_lider' && (
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>
-                    Empresas asignadas
-                    <span style={{ fontWeight: '400', color: 'var(--text-muted)', marginLeft: '0.4rem' }}>
-                      ({editUserForm.company_ids.length} seleccionadas — sin selección ve todas)
-                    </span>
-                  </label>
-                  <div style={{ maxHeight: '160px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                    {companies.filter(c => c.is_active).map(c => (
-                      <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
-                        <input
-                          type="checkbox"
-                          checked={editUserForm.company_ids.includes(c.id)}
-                          onChange={e => setEditUserForm(prev => ({
-                            ...prev,
-                            company_ids: e.target.checked
-                              ? [...prev.company_ids, c.id]
-                              : prev.company_ids.filter(id => id !== c.id)
-                          }))}
-                        />
-                        {c.name}
-                      </label>
-                    ))}
-                    {companies.filter(c => c.is_active).length === 0 && (
-                      <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>No hay empresas activas.</p>
-                    )}
-                  </div>
-                </div>
+              {editUserForm.role === 'steven_marin' ? (
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>El Admin tiene acceso a todas las empresas.</p>
+              ) : (
+                <CompanyAccessPicker
+                  companies={companies}
+                  allCompanies={editUserForm.all_companies && canGrantAllCompanies}
+                  companyIds={editUserForm.company_ids}
+                  canGrantAll={canGrantAllCompanies}
+                  onChange={access => setEditUserForm(prev => ({ ...prev, ...access }))}
+                />
               )}
               <div>
                 <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '500', fontSize: '0.9rem' }}>

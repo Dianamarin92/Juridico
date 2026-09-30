@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const db = require('../config/db');
 const auth = require('../middleware/auth');
+const { getAllowedCompanyIds } = require('../middleware/companyAccess');
 
 const router = express.Router();
 
@@ -10,18 +11,11 @@ router.get('/', auth, async (req, res) => {
     let whereClause = '';
     const params = [];
 
-    if (req.user.role === 'abogada_lider') {
-      try {
-        const [access] = await db.query(
-          'SELECT company_id FROM user_company_access WHERE user_id = ?',
-          [req.user.id]
-        );
-        if (access.length > 0) {
-          const ids = access.map(a => a.company_id);
-          whereClause = `WHERE c.id IN (${ids.map(() => '?').join(',')})`;
-          params.push(...ids);
-        }
-      } catch { /* tabla aún no creada, sin filtro */ }
+    const allowed = await getAllowedCompanyIds(req.user);
+    if (allowed !== null) {
+      if (allowed.length === 0) return res.json([]);
+      whereClause = `WHERE c.id IN (${allowed.map(() => '?').join(',')})`;
+      params.push(...allowed);
     }
 
     const [rows] = await db.query(`

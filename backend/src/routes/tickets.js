@@ -1,12 +1,15 @@
 const express = require('express');
 const db = require('../config/db');
 const auth = require('../middleware/auth');
+const { canAccessCompany } = require('../middleware/companyAccess');
 
 const router = express.Router();
 
 router.get('/', auth, async (req, res) => {
   const { company_id } = req.query;
   try {
+    if (!(await canAccessCompany(req.user, company_id)))
+      return res.status(403).json({ error: 'Sin acceso a esta empresa' });
     const [rows] = await db.query(
       'SELECT t.*, u.email as assigned_email, u.name as assigned_name FROM tickets t LEFT JOIN users u ON t.assigned_to = u.id WHERE t.company_id = ? ORDER BY t.created_at DESC',
       [company_id]
@@ -20,6 +23,8 @@ router.get('/', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   const { company_id, title, description } = req.body;
   try {
+    if (!(await canAccessCompany(req.user, company_id)))
+      return res.status(403).json({ error: 'Sin acceso a esta empresa' });
     const [result] = await db.query(
       'INSERT INTO tickets (company_id, title, description, status, created_by) VALUES (?, ?, ?, "pending", ?)',
       [company_id, title, description, req.user.id]
@@ -40,7 +45,7 @@ router.delete('/:id', auth, async (req, res) => {
     const [rows] = await db.query('SELECT * FROM tickets WHERE id = ?', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'Ticket no encontrado' });
     if (rows[0].status !== 'pending') return res.status(403).json({ error: 'Solo se pueden eliminar tickets pendientes' });
-    if (req.user.role === 'cliente' && rows[0].company_id !== req.user.company_id)
+    if (!(await canAccessCompany(req.user, rows[0].company_id)))
       return res.status(403).json({ error: 'Sin permisos' });
 
     await db.query('DELETE FROM audit_logs WHERE ticket_id = ?', [id]);
@@ -59,6 +64,8 @@ router.put('/:id', auth, async (req, res) => {
   try {
     const [current] = await db.query('SELECT * FROM tickets WHERE id = ?', [id]);
     if (!current[0]) return res.status(404).json({ error: 'Ticket no encontrado' });
+    if (!(await canAccessCompany(req.user, current[0].company_id)))
+      return res.status(403).json({ error: 'Sin acceso a esta empresa' });
 
     await db.query('UPDATE tickets SET status = ?, assigned_to = ?, is_new = ? WHERE id = ?', [
       status || current[0].status,

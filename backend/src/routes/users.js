@@ -2,22 +2,21 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const db = require('../config/db');
 const auth = require('../middleware/auth');
+const { setUserCompanies, validateCompanyAccess } = require('../middleware/companyAccess');
 
 const router = express.Router();
 
 router.get('/', auth, async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT id, username, name, email, role, is_active FROM users WHERE role != 'cliente' ORDER BY role"
+      "SELECT id, username, name, email, role, is_active, all_companies FROM users WHERE role != 'cliente' ORDER BY role"
     );
-    let accessMap = {};
-    try {
-      const [access] = await db.query('SELECT user_id, company_id FROM user_company_access');
-      for (const a of access) {
-        if (!accessMap[a.user_id]) accessMap[a.user_id] = [];
-        accessMap[a.user_id].push(a.company_id);
-      }
-    } catch { /* tabla aún no creada */ }
+    const accessMap = {};
+    const [access] = await db.query('SELECT user_id, company_id FROM user_company_access');
+    for (const a of access) {
+      if (!accessMap[a.user_id]) accessMap[a.user_id] = [];
+      accessMap[a.user_id].push(a.company_id);
+    }
     res.json(rows.map(u => ({ ...u, company_ids: accessMap[u.id] || [] })));
   } catch {
     res.status(500).json({ error: 'Error al obtener usuarios' });
@@ -25,23 +24,29 @@ router.get('/', auth, async (req, res) => {
 });
 
 router.post('/', auth, async (req, res) => {
-  const { username, name, email, password, role, company_ids } = req.body;
+  const { username, name, email, password, role, all_companies, company_ids } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
   const validRoles = ['abogada_asignada', 'abogada_lider'];
   if (req.user.role === 'steven_marin') validRoles.push('steven_marin');
   if (!validRoles.includes(role)) return res.status(400).json({ error: 'Rol no válido' });
   try {
+    // El Admin siempre ve todas las empresas
+    let access = { all: true, ids: [] };
+    if (role !== 'steven_marin') {
+      access = await validateCompanyAccess(req.user, all_companies, company_ids || []);
+      if (access.error) return res.status(400).json({ error: access.error });
+    }
     const hash = await bcrypt.hash(password, 10);
     const [result] = await db.query(
-      'INSERT INTO users (username, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)',
-      [username, name || null, email || null, hash, role]
+      'INSERT INTO users (username, name, email, password_hash, role, all_companies) VALUES (?, ?, ?, ?, ?, ?)',
+      [username, name || null, email || null, hash, role, access.all ? 1 : 0]
     );
-    if (role === 'abogada_lider' && Array.isArray(company_ids) && company_ids.length > 0) {
-      for (const cid of company_ids) {
-        await db.query(
-          'INSERT IGNORE INTO user_company_access (user_id, company_id) VALUES (?, ?)',
-          [result.insertId, cid]
-        );
+    if (!access.all) {
+      try {
+        await setUserCompanies(result.insertId, false, access.ids);
+      } catch {
+        await db.query('DELETE FROM users WHERE id = ?', [result.insertId]);
+        return res.status(500).json({ error: 'Error al asignar empresas al usuario' });
       }
     }
     res.status(201).json({ ok: true });
@@ -68,10 +73,18 @@ router.put('/me/password', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   if (!['steven_marin', 'abogada_lider'].includes(req.user.role)) return res.status(403).json({ error: 'Sin permisos' });
   const { id } = req.params;
-  const { name, email, role, password, company_ids } = req.body;
+  const { name, email, role, password, all_companies, company_ids } = req.body;
   try {
     const validRoles = ['abogada_asignada', 'abogada_lider', 'steven_marin'];
     if (role && !validRoles.includes(role)) return res.status(400).json({ error: 'Rol no válido' });
+
+    let access;
+    if (role === 'steven_marin') {
+      access = { all: true, ids: [] };
+    } else if (all_companies !== undefined || company_ids !== undefined) {
+      access = await validateCompanyAccess(req.user, all_companies, company_ids || []);
+      if (access.error) return res.status(400).json({ error: access.error });
+    }
 
     const updates = [];
     const values = [];
@@ -88,17 +101,7 @@ router.put('/:id', auth, async (req, res) => {
       await db.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
     }
 
-    if (company_ids !== undefined) {
-      await db.query('DELETE FROM user_company_access WHERE user_id = ?', [id]);
-      if (Array.isArray(company_ids) && company_ids.length > 0) {
-        for (const cid of company_ids) {
-          await db.query(
-            'INSERT INTO user_company_access (user_id, company_id) VALUES (?, ?)',
-            [id, cid]
-          );
-        }
-      }
-    }
+    if (access) await setUserCompanies(id, access.all, access.ids);
 
     res.json({ ok: true });
   } catch {

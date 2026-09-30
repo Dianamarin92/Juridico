@@ -64,3 +64,14 @@ CREATE TABLE file_uploads (
   FOREIGN KEY (ticket_id) REFERENCES tickets(id),
   FOREIGN KEY (uploaded_by) REFERENCES users(id)
 );
+
+-- Acceso de abogadas a empresas: all_companies = 1 ve todas; 0 solo las de user_company_access
+ALTER TABLE users ADD COLUMN all_companies TINYINT(1) NOT NULL DEFAULT 1;
+
+CREATE TABLE IF NOT EXISTS user_company_access (
+  user_id INT NOT NULL,
+  company_id INT NOT NULL,
+  PRIMARY KEY (user_id, company_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);

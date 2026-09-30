@@ -195,6 +195,23 @@ ALTER TABLE users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1;
 ALTER TABLE users ADD COLUMN name VARCHAR(100) DEFAULT NULL AFTER username;
 ```
 
+### Acceso de abogadas a empresas (ejecutar en producción — 2026-09-29)
+
+```sql
+CREATE TABLE IF NOT EXISTS user_company_access (
+  user_id INT NOT NULL,
+  company_id INT NOT NULL,
+  PRIMARY KEY (user_id, company_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+ALTER TABLE users ADD COLUMN all_companies TINYINT(1) NOT NULL DEFAULT 1;
+UPDATE users SET all_companies = 0
+  WHERE id IN (SELECT user_id FROM (SELECT DISTINCT user_id FROM user_company_access) t);
+```
+
+`all_companies = 1` → ve todas las empresas (incluidas las futuras). `0` → solo las de `user_company_access`; si se eliminan todas sus empresas no ve ninguna (nunca pasa a ver todas). La lógica está en `backend/src/middleware/companyAccess.js`.
+
 ## Frontend — estructura clave
 
 ```
@@ -230,7 +247,8 @@ frontend/src/
 - **Mi Perfil (admin):** barra de progreso de almacenamiento (límite 5 GB) y cambio de contraseña
 - **Perfil Empresa:** lista empresas; al entrar muestra datos editables, conteo de tickets por estado, y documentos (subir/ver/descargar/eliminar); popup de previsualización con info de empresa + vista de imagen, PDF, Word, Excel o PowerPoint (Office Online Viewer)
 - **Auto-NIT en nueva empresa:** campo Usuario se sincroniza al escribir el NIT
-- **Usuarios del Sistema** (Admin y Abogada Líder): tabla con nombre, cédula, correo, rol y estado; botones Editar (nombre, correo, rol, contraseña), Desactivar/Activar y **Eliminar** (solo Admin); usuario desactivado no puede iniciar sesión
+- **Empresas por usuario:** al crear/editar una Abogada (Líder o Asignada) se elige "Todas las empresas" o una lista de empresas; el backend filtra directorio y tickets (ver, crear, editar, eliminar) según ese acceso. Una Abogada Líder restringida solo puede asignar sus propias empresas. "Asignar a" en un ticket solo lista abogadas con acceso a esa empresa.
+- **Usuarios del Sistema** (Admin y Abogada Líder): tabla con nombre, cédula, correo, rol, empresas y estado; botones Editar (nombre, correo, rol, contraseña), Desactivar/Activar y **Eliminar** (solo Admin); usuario desactivado no puede iniciar sesión
 - **Asignado a:** muestra el nombre completo del abogado (no el correo) en la tabla de tickets y en el detalle del ticket
 - **Módulo de Informes** (solo Admin): seleccionar empresa (o todas) + período (días/meses/años) + cantidad → genera tabla con conteo por estado; si es empresa específica muestra tarjetas resumen + tabla detallada de tickets
 - Rol `steven_marin` se muestra como **Admin** en toda la interfaz
