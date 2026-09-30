@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const db = require('../config/db');
 const auth = require('../middleware/auth');
-const { canAccessFile } = require('../middleware/companyAccess');
+const { canAccessFile, getAllowedCompanyIds } = require('../middleware/companyAccess');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -77,16 +77,26 @@ router.get('/storage', auth, async (req, res) => {
 router.get('/', auth, async (req, res) => {
   const { ticket_id, company_id, task_id, all_tasks } = req.query;
   try {
-    const allowed = all_tasks
-      ? req.user.role !== 'cliente'
-      : await canAccessFile(req.user, { ticket_id, company_id, task_id });
-    if (!allowed) return res.status(403).json({ error: 'Sin acceso' });
     let rows;
     if (all_tasks) {
+      if (req.user.role === 'cliente') return res.status(403).json({ error: 'Sin acceso' });
+      // Solo archivos de tareas que el usuario puede ver (sin empresa = solo con acceso a todas)
+      const allowedCompanies = await getAllowedCompanyIds(req.user);
+      if (allowedCompanies !== null && allowedCompanies.length === 0) return res.json([]);
+      const where = allowedCompanies === null
+        ? ''
+        : `AND t.company_id IN (${allowedCompanies.map(() => '?').join(',')})`;
       [rows] = await db.query(
-        'SELECT * FROM file_uploads WHERE task_id IS NOT NULL ORDER BY task_id, created_at DESC'
+        `SELECT f.* FROM file_uploads f JOIN tasks t ON f.task_id = t.id
+         WHERE f.task_id IS NOT NULL ${where}
+         ORDER BY f.task_id, f.created_at DESC`,
+        allowedCompanies || []
       );
-    } else if (task_id) {
+      return res.json(rows);
+    }
+    if (!(await canAccessFile(req.user, { ticket_id, company_id, task_id })))
+      return res.status(403).json({ error: 'Sin acceso' });
+    if (task_id) {
       [rows] = await db.query(
         'SELECT * FROM file_uploads WHERE task_id = ? ORDER BY created_at DESC',
         [task_id]

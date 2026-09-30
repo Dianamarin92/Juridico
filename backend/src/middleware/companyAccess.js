@@ -22,13 +22,24 @@ async function canAccessTicket(user, ticketId) {
   return canAccessCompany(user, ticket.company_id);
 }
 
-// Archivo de ticket, de empresa o de tarea (las tareas son internas: no para clientes).
-// Se exige acceso a cada id presente.
+// Tareas: nunca para clientes. Las tareas sin empresa solo las ve quien tiene acceso a todas.
+function taskVisible(allowed, taskCompanyId) {
+  return allowed === null || (taskCompanyId !== null && allowed.includes(taskCompanyId));
+}
+
+async function canAccessTask(user, taskId) {
+  if (user.role === 'cliente') return false;
+  const [[task]] = await db.query('SELECT company_id FROM tasks WHERE id = ?', [taskId]);
+  if (!task) return false;
+  return taskVisible(await getAllowedCompanyIds(user), task.company_id);
+}
+
+// Archivo de ticket, de empresa o de tarea. Se exige acceso a cada id presente.
 async function canAccessFile(user, { ticket_id, company_id, task_id }) {
   if (!ticket_id && !company_id && !task_id) return false;
   if (ticket_id && !(await canAccessTicket(user, ticket_id))) return false;
   if (company_id && !(await canAccessCompany(user, company_id))) return false;
-  if (task_id && user.role === 'cliente') return false;
+  if (task_id && !(await canAccessTask(user, task_id))) return false;
   return true;
 }
 
@@ -61,6 +72,6 @@ async function validateCompanyAccess(requester, allCompanies, companyIds) {
 }
 
 module.exports = {
-  getAllowedCompanyIds, canAccessCompany, canAccessTicket, canAccessFile,
+  getAllowedCompanyIds, canAccessCompany, canAccessTicket, canAccessTask, canAccessFile,
   setUserCompanies, validateCompanyAccess,
 };

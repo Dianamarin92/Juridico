@@ -131,7 +131,7 @@ export default function App() {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError]     = useState('');
 
-  const TASK_EMPTY = { fecha_inicio: '', fecha_fin: '', cliente_proceso: '', tarea: '', responsable: '', observaciones: '', link_revision: '', prioridad: 'media', estado: 'pendiente' };
+  const TASK_EMPTY = { company_id: '', fecha_inicio: '', fecha_fin: '', cliente_proceso: '', tarea: '', responsable: '', observaciones: '', link_revision: '', prioridad: 'media', estado: 'pendiente' };
   const [tasks, setTasks]                   = useState([]);
   const [tasksLoading, setTasksLoading]     = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -147,6 +147,8 @@ export default function App() {
   const isCliente  = role === 'cliente';
   // Una Abogada Líder con empresas restringidas no puede dar acceso a todas
   const canGrantAllCompanies = role !== 'abogada_lider' || lawyers.find(l => l.id === user?.id)?.all_companies !== 0;
+  // Acceso a todas las empresas: puede crear y ver tareas sin empresa
+  const userSeesAllCompanies = user?.all_companies !== false;
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -981,6 +983,7 @@ export default function App() {
             const openEdit = (t) => {
               setEditingTask(t);
               setTaskForm({
+                company_id: t.company_id ? String(t.company_id) : '',
                 fecha_inicio: t.fecha_inicio ? String(t.fecha_inicio).slice(0, 10) : '',
                 fecha_fin:    t.fecha_fin    ? String(t.fecha_fin).slice(0, 10)    : '',
                 cliente_proceso: t.cliente_proceso || '',
@@ -999,7 +1002,11 @@ export default function App() {
               try {
                 if (editingTask) {
                   await api.updateTask(editingTask.id, taskForm);
-                  setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...taskForm } : t));
+                  const companyId = taskForm.company_id ? Number(taskForm.company_id) : null;
+                  const companyName = companies.find(c => c.id === companyId)?.name || null;
+                  setTasks(prev => prev.map(t => t.id === editingTask.id
+                    ? { ...t, ...taskForm, company_id: companyId, company_name: companyName }
+                    : t));
                 } else {
                   const created = await api.createTask(taskForm);
                   setTasks(prev => [created, ...prev]);
@@ -1024,6 +1031,7 @@ export default function App() {
                   const q = taskSearch.toLowerCase();
                   return (
                     (t.tarea || '').toLowerCase().includes(q) ||
+                    (t.company_name || '').toLowerCase().includes(q) ||
                     (t.cliente_proceso || '').toLowerCase().includes(q) ||
                     (t.responsable || '').toLowerCase().includes(q) ||
                     (t.observaciones || '').toLowerCase().includes(q)
@@ -1077,7 +1085,12 @@ export default function App() {
                                 )}
                               </div>
                               <p style={{ margin: '0 0 0.4rem', fontWeight: '600', fontSize: '1rem', color: 'var(--primary-color)' }}>{t.tarea}</p>
-                              {t.cliente_proceso && <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Cliente / Proceso: <strong style={{ color: 'var(--text-color)' }}>{t.cliente_proceso}</strong></p>}
+                              <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                                Empresa: {t.company_name
+                                  ? <strong style={{ color: 'var(--text-color)' }}>{t.company_name}</strong>
+                                  : <em>Sin empresa (tarea interna)</em>}
+                              </p>
+                              {t.cliente_proceso && <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Proceso: <strong style={{ color: 'var(--text-color)' }}>{t.cliente_proceso}</strong></p>}
                               {t.responsable && <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Responsable: <strong style={{ color: 'var(--text-color)' }}>{t.responsable}</strong></p>}
                               {t.observaciones && <p style={{ margin: '0.4rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>{t.observaciones}</p>}
                               {t.link_revision && (
@@ -1161,8 +1174,24 @@ export default function App() {
                           </div>
                         </div>
                         <div>
-                          <label style={labelStyle}>Cliente / Proceso</label>
-                          <input type="text" value={taskForm.cliente_proceso} onChange={e => setTaskForm(p => ({ ...p, cliente_proceso: e.target.value }))} placeholder="Ej. Inversiones Radical" style={inputStyle} />
+                          <label style={labelStyle}>
+                            Empresa {!userSeesAllCompanies && <span style={{ color: '#dc2626' }}>*</span>}
+                          </label>
+                          <select
+                            value={taskForm.company_id}
+                            onChange={e => setTaskForm(p => ({ ...p, company_id: e.target.value }))}
+                            required={!userSeesAllCompanies}
+                            style={inputStyle}
+                          >
+                            <option value="">{userSeesAllCompanies ? '— Sin empresa (tarea interna) —' : '— Selecciona una empresa —'}</option>
+                            {companies
+                              .filter(c => c.is_active || String(c.id) === taskForm.company_id)
+                              .map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Proceso</label>
+                          <input type="text" value={taskForm.cliente_proceso} onChange={e => setTaskForm(p => ({ ...p, cliente_proceso: e.target.value }))} placeholder="Ej. Demanda laboral 2026" style={inputStyle} />
                         </div>
                         <div>
                           <label style={labelStyle}>Tarea <span style={{ color: '#b91c1c' }}>*</span></label>
@@ -1691,9 +1720,7 @@ export default function App() {
 
                     {/* Tareas de la empresa */}
                     {(() => {
-                      const companyTasks = tasks.filter(t =>
-                        t.cliente_proceso && t.cliente_proceso.toLowerCase().includes(profileCompany.name.toLowerCase())
-                      );
+                      const companyTasks = tasks.filter(t => t.company_id === profileCompany.id);
                       const pendientes  = companyTasks.filter(t => t.estado === 'pendiente').length;
                       const contestadas = companyTasks.filter(t => t.estado === 'contestada').length;
                       const terminadas  = companyTasks.filter(t => t.estado === 'terminada').length;
