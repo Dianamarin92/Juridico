@@ -16,6 +16,22 @@ async function canAccessCompany(user, companyId) {
   return allowed === null || allowed.includes(Number(companyId));
 }
 
+async function canAccessTicket(user, ticketId) {
+  const [[ticket]] = await db.query('SELECT company_id FROM tickets WHERE id = ?', [ticketId]);
+  if (!ticket) return false;
+  return canAccessCompany(user, ticket.company_id);
+}
+
+// Archivo de ticket, de empresa o de tarea (las tareas son internas: no para clientes).
+// Se exige acceso a cada id presente.
+async function canAccessFile(user, { ticket_id, company_id, task_id }) {
+  if (!ticket_id && !company_id && !task_id) return false;
+  if (ticket_id && !(await canAccessTicket(user, ticket_id))) return false;
+  if (company_id && !(await canAccessCompany(user, company_id))) return false;
+  if (task_id && user.role === 'cliente') return false;
+  return true;
+}
+
 // Guarda el acceso de un usuario: todas las empresas, o solo las de la lista.
 async function setUserCompanies(userId, allCompanies, companyIds) {
   await db.query('UPDATE users SET all_companies = ? WHERE id = ?', [allCompanies ? 1 : 0, userId]);
@@ -44,4 +60,7 @@ async function validateCompanyAccess(requester, allCompanies, companyIds) {
   return { all, ids };
 }
 
-module.exports = { getAllowedCompanyIds, canAccessCompany, setUserCompanies, validateCompanyAccess };
+module.exports = {
+  getAllowedCompanyIds, canAccessCompany, canAccessTicket, canAccessFile,
+  setUserCompanies, validateCompanyAccess,
+};

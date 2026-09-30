@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const db = require('../config/db');
 const auth = require('../middleware/auth');
+const { canAccessFile } = require('../middleware/companyAccess');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -33,9 +34,16 @@ const router = express.Router();
 router.post('/upload', auth, upload.single('file'), async (req, res) => {
   const { ticket_id, company_id, task_id } = req.body;
   if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
-  if (!ticket_id && !company_id && !task_id) return res.status(400).json({ error: 'ticket_id, company_id o task_id requerido' });
+  if (!ticket_id && !company_id && !task_id) {
+    fs.unlink(req.file.path, () => {});
+    return res.status(400).json({ error: 'ticket_id, company_id o task_id requerido' });
+  }
 
   try {
+    if (!(await canAccessFile(req.user, req.body))) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(403).json({ error: 'Sin acceso' });
+    }
     const filePath = '/' + path.posix.join(req.file.destination, req.file.filename);
     const [result] = await db.query(
       'INSERT INTO file_uploads (ticket_id, company_id, task_id, filename, path, uploaded_by) VALUES (?, ?, ?, ?, ?, ?)',
@@ -69,6 +77,10 @@ router.get('/storage', auth, async (req, res) => {
 router.get('/', auth, async (req, res) => {
   const { ticket_id, company_id, task_id, all_tasks } = req.query;
   try {
+    const allowed = all_tasks
+      ? req.user.role !== 'cliente'
+      : await canAccessFile(req.user, { ticket_id, company_id, task_id });
+    if (!allowed) return res.status(403).json({ error: 'Sin acceso' });
     let rows;
     if (all_tasks) {
       [rows] = await db.query(
@@ -101,6 +113,7 @@ router.delete('/:id', auth, async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM file_uploads WHERE id = ?', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'Archivo no encontrado' });
+    if (!(await canAccessFile(req.user, rows[0]))) return res.status(403).json({ error: 'Sin acceso' });
 
     const fullPath = path.join(__dirname, '../..', rows[0].path);
     fs.unlink(fullPath, () => {});
