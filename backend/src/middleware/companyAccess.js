@@ -22,16 +22,28 @@ async function canAccessTicket(user, ticketId) {
   return canAccessCompany(user, ticket.company_id);
 }
 
-// Tareas: nunca para clientes. Las tareas sin empresa solo las ve quien tiene acceso a todas.
-function taskVisible(allowed, taskCompanyId) {
-  return allowed === null || (taskCompanyId !== null && allowed.includes(taskCompanyId));
-}
-
+// Tareas: nunca para clientes. Una abogada restringida ve las tareas de sus empresas
+// y las tareas sin empresa (clientes externos) que ella misma creó.
 async function canAccessTask(user, taskId) {
   if (user.role === 'cliente') return false;
-  const [[task]] = await db.query('SELECT company_id FROM tasks WHERE id = ?', [taskId]);
+  const [[task]] = await db.query('SELECT company_id, created_by FROM tasks WHERE id = ?', [taskId]);
   if (!task) return false;
-  return taskVisible(await getAllowedCompanyIds(user), task.company_id);
+  const allowed = await getAllowedCompanyIds(user);
+  if (allowed === null) return true;
+  return task.company_id === null ? task.created_by === user.id : allowed.includes(task.company_id);
+}
+
+// Condición SQL (tabla con alias t) para las tareas visibles. null = todas.
+async function taskFilterSql(user) {
+  const allowed = await getAllowedCompanyIds(user);
+  if (allowed === null) return null;
+  const parts = ['(t.company_id IS NULL AND t.created_by = ?)'];
+  const params = [user.id];
+  if (allowed.length > 0) {
+    parts.push(`t.company_id IN (${allowed.map(() => '?').join(',')})`);
+    params.push(...allowed);
+  }
+  return { sql: `(${parts.join(' OR ')})`, params };
 }
 
 // Archivo de ticket, de empresa o de tarea. Se exige acceso a cada id presente.
@@ -72,6 +84,6 @@ async function validateCompanyAccess(requester, allCompanies, companyIds) {
 }
 
 module.exports = {
-  getAllowedCompanyIds, canAccessCompany, canAccessTicket, canAccessTask, canAccessFile,
+  getAllowedCompanyIds, canAccessCompany, canAccessTicket, canAccessTask, taskFilterSql, canAccessFile,
   setUserCompanies, validateCompanyAccess,
 };

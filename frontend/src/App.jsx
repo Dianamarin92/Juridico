@@ -147,8 +147,6 @@ export default function App() {
   const isCliente  = role === 'cliente';
   // Una Abogada Líder con empresas restringidas no puede dar acceso a todas
   const canGrantAllCompanies = role !== 'abogada_lider' || lawyers.find(l => l.id === user?.id)?.all_companies !== 0;
-  // Acceso a todas las empresas: puede crear y ver tareas sin empresa
-  const userSeesAllCompanies = user?.all_companies !== false;
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -1174,16 +1172,13 @@ export default function App() {
                           </div>
                         </div>
                         <div>
-                          <label style={labelStyle}>
-                            Empresa {!userSeesAllCompanies && <span style={{ color: '#dc2626' }}>*</span>}
-                          </label>
+                          <label style={labelStyle}>Empresa</label>
                           <select
                             value={taskForm.company_id}
                             onChange={e => setTaskForm(p => ({ ...p, company_id: e.target.value }))}
-                            required={!userSeesAllCompanies}
                             style={inputStyle}
                           >
-                            <option value="">{userSeesAllCompanies ? '— Sin empresa —' : '— Selecciona una empresa —'}</option>
+                            <option value="">— Sin empresa —</option>
                             {companies
                               .filter(c => c.is_active || String(c.id) === taskForm.company_id)
                               .map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}

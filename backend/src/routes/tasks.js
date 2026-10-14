@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../config/db');
 const auth = require('../middleware/auth');
-const { getAllowedCompanyIds, canAccessTask } = require('../middleware/companyAccess');
+const { getAllowedCompanyIds, canAccessTask, taskFilterSql } = require('../middleware/companyAccess');
 
 const router = express.Router();
 
@@ -11,10 +11,11 @@ const TASK_SELECT = `
   LEFT JOIN users u ON t.created_by = u.id
   LEFT JOIN companies c ON t.company_id = c.id`;
 
-// Devuelve un mensaje de error si el usuario no puede asignar esa empresa a una tarea
+// Devuelve un mensaje de error si el usuario no puede asignar esa empresa a una tarea.
+// La empresa es opcional (clientes externos).
 async function checkTaskCompany(user, companyId) {
+  if (!companyId) return null;
   const allowed = await getAllowedCompanyIds(user);
-  if (!companyId) return allowed === null ? null : 'Selecciona la empresa de la tarea';
   if (allowed !== null && !allowed.includes(Number(companyId))) return 'No tienes acceso a esa empresa';
   return null;
 }
@@ -22,21 +23,16 @@ async function checkTaskCompany(user, companyId) {
 router.get('/', auth, async (req, res) => {
   if (req.user.role === 'cliente') return res.status(403).json({ error: 'Sin permisos' });
   try {
-    let where = '';
-    const allowed = await getAllowedCompanyIds(req.user);
-    if (allowed !== null) {
-      if (allowed.length === 0) return res.json([]);
-      where = `WHERE t.company_id IN (${allowed.map(() => '?').join(',')})`;
-    }
+    const filter = await taskFilterSql(req.user);
     const [rows] = await db.query(
       `${TASK_SELECT}
-       ${where}
+       ${filter ? `WHERE ${filter.sql}` : ''}
        ORDER BY
          FIELD(t.estado, 'pendiente', 'contestada', 'terminada'),
          t.fecha_inicio IS NULL,
          t.fecha_inicio ASC,
          t.created_at DESC`,
-      allowed || []
+      filter ? filter.params : []
     );
     res.json(rows);
   } catch (err) {

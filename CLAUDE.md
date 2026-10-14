@@ -223,7 +223,7 @@ UPDATE tasks t JOIN companies c ON t.cliente_proceso LIKE CONCAT('%', c.name, '%
   SET t.company_id = c.id WHERE t.company_id IS NULL;
 ```
 
-Tareas con `company_id` NULL = tareas internas: solo las ven Admin y abogadas con acceso a todas las empresas.
+La empresa de una tarea es opcional (clientes externos). Tareas con `company_id` NULL las ven el Admin, las abogadas con acceso a todas las empresas y la abogada que la creó (`created_by`).
 
 ## Frontend — estructura clave
 
