@@ -126,6 +126,24 @@ router.delete('/:id', auth, async (req, res) => {
   const { id } = req.params;
   if (parseInt(id) === req.user.id) return res.status(400).json({ error: 'No puedes eliminar tu propio usuario' });
   try {
+    // El historial (mensajes, documentos, cambios) guarda su autor: no se borra
+    const [[usage]] = await db.query(
+      `SELECT
+         (SELECT COUNT(*) FROM tickets      WHERE created_by  = ?) AS tickets,
+         (SELECT COUNT(*) FROM messages     WHERE sender_id   = ?) AS mensajes,
+         (SELECT COUNT(*) FROM file_uploads WHERE uploaded_by = ?) AS archivos,
+         (SELECT COUNT(*) FROM tasks        WHERE created_by  = ?) AS tareas,
+         (SELECT COUNT(*) FROM audit_logs   WHERE user_id     = ?) AS cambios`,
+      [id, id, id, id, id]
+    );
+    const history = Object.entries(usage).filter(([, n]) => n > 0).map(([what, n]) => `${n} ${what}`);
+    if (history.length > 0) {
+      return res.status(409).json({
+        error: `No se puede eliminar: el usuario tiene historial (${history.join(', ')}). ` +
+               'Desactívalo para que no pueda iniciar sesión y se conserve el historial.',
+      });
+    }
+    await db.query('UPDATE tickets SET assigned_to = NULL WHERE assigned_to = ?', [id]);
     await db.query('DELETE FROM users WHERE id = ?', [id]);
     res.json({ ok: true });
   } catch {
