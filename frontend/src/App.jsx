@@ -5,8 +5,8 @@ import * as api from './services/api';
 
 const ROLE_LABELS = {
   cliente:           'Cliente',
-  abogada_asignada:  'Abogada Asignada',
-  abogada_lider:     'Abogada Líder',
+  abogada_asignada:  'Abogado(a) Asignado(a)',
+  abogada_lider:     'Abogado(a) Líder',
   steven_marin:      'Admin',
 };
 
@@ -2102,8 +2102,8 @@ export default function App() {
                   onChange={e => setNewUser(prev => ({ ...prev, role: e.target.value }))}
                   style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
                 >
-                  <option value="abogada_asignada">Abogada Asignada</option>
-                  <option value="abogada_lider">Abogada Líder</option>
+                  <option value="abogada_asignada">{ROLE_LABELS.abogada_asignada}</option>
+                  <option value="abogada_lider">{ROLE_LABELS.abogada_lider}</option>
                   {role === 'steven_marin' && (
                     <option value="steven_marin">Admin</option>
                   )}
@@ -2296,8 +2296,8 @@ export default function App() {
                   onChange={e => setEditUserForm(prev => ({ ...prev, role: e.target.value }))}
                   style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', fontFamily: 'inherit', fontSize: '0.9rem' }}
                 >
-                  <option value="abogada_asignada">Abogada Asignada</option>
-                  <option value="abogada_lider">Abogada Líder</option>
+                  <option value="abogada_asignada">{ROLE_LABELS.abogada_asignada}</option>
+                  <option value="abogada_lider">{ROLE_LABELS.abogada_lider}</option>
                   <option value="steven_marin">Admin</option>
                 </select>
               </div>
